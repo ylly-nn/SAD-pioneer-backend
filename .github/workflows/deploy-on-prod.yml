@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    types: [closed]
+  workflow_dispatch: 
+jobs:
+  deploy:
+    if: |
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true) ||
+      (github.event_name == 'workflow_dispatch' && github.ref_name == 'main')
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.23.1'
+    - name: Build App
+      run: |
+        cd ./src
+        go mod tidy
+        go build -o backend-pioneer main.go
+        mv backend-pioneer ../
+
+    - name: Deploy to Server via SSH
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.SSH_PROD_HOST }}
+        username: ${{ secrets.SSH_PROD_USER }}
+        key: ${{ secrets.SSH_PROD_KEY }}
+        source: "backend-pioneer"
+        target: "/var/www/backend-pioneer"
+    - name: Restart Service
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SSH_PROD_HOST }}
+        username: ${{ secrets.SSH_PROD_USER }}
+        key: ${{ secrets.SSH_PROD_KEY }}
+        script: |
+          chmod +x /var/www/backend-pioneer/backend-pioneer
+          sudo systemctl restart backend-pioneer.service  
