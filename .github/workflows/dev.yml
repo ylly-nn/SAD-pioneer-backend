@@ -22,6 +22,13 @@ jobs:
         go mod tidy
         go build -o backend-pioneer main.go
         mv backend-pioneer ../
+    - name: Create .env
+      run: |
+        echo "DB_HOST='${{secrets.DB_HOST}}'" > .env
+        echo "DB_PORT='${{secrets.DB_PORT}}'" >> .env
+        echo "DB_USER='${{secrets.DB_USER}}'" >> .env
+        echo "DB_PASSWORD='${{secrets.DB_PASSWORD}}'" >> .env
+        echo "DB_NAME='${{secrets.DB_NAME}}'" >> .env
 
     - name: Deploy to Server via SSH
       uses: appleboy/scp-action@v0.1.7
@@ -29,7 +36,7 @@ jobs:
         host: ${{ secrets.SSH_DEV_HOST }}
         username: ${{ secrets.SSH_DEV_USER }}
         key: ${{ secrets.SSH_DEV_KEY }}
-        source: "backend-pioneer"
+        source: "backend-pioneer, .env"
         target: "/var/www/backend-pioneer"
     - name: Restart Service
       uses: appleboy/ssh-action@v1.0.3
@@ -38,5 +45,6 @@ jobs:
         username: ${{ secrets.SSH_DEV_USER }}
         key: ${{ secrets.SSH_DEV_KEY }}
         script: |
+          sudo chmod 600 .env
           chmod +x /var/www/backend-pioneer/backend-pioneer
           sudo systemctl restart backend-pioneer.service
