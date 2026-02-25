@@ -37,6 +37,8 @@ func (h *Handler) GetServices(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
+// Создаёт новую услугу - если услуга с таким именем уже есть отдаёт ошибку
+// Service with this name already exists
 func (h *Handler) CreateService(w http.ResponseWriter, r *http.Request) {
 	var req CreateServiceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -46,8 +48,15 @@ func (h *Handler) CreateService(w http.ResponseWriter, r *http.Request) {
 
 	service, err := h.service.CreateService(req.Name)
 	if err != nil {
-		// Если ошибка валидации – 400, иначе 500
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		if errors.Is(err, ErrEmptyName) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, ErrServiceAlreadyExists) {
+			http.Error(w, "Service with this name already exists", http.StatusConflict)
+			return
+		}
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 

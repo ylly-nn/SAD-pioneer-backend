@@ -6,12 +6,14 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // Ошибки которые может возвращать storage
 var (
 	// ErrServiceNotFound возвращается, когда услуга с указанным ID не найдена.
-	ErrServiceNotFound = errors.New("service not found")
+	ErrServiceNotFound      = errors.New("service not found")
+	ErrServiceAlreadyExists = errors.New("service already exists")
 )
 
 // ServiceStorage определяет методы для работы с услугами в базе данных.
@@ -64,6 +66,10 @@ func (s *PostgresServiceStorage) Create(name string) (*Service, error) {
         RETURNING id, name
     `, name).Scan(&service.ID, &service.Name)
 	if err != nil {
+		var pqErr *pgconn.PgError
+		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
+			return nil, fmt.Errorf("create service: %w", ErrServiceAlreadyExists)
+		}
 		return nil, fmt.Errorf("create service: %w", err)
 	}
 	return &service, nil
