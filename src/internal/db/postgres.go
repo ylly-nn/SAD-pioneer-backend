@@ -10,6 +10,15 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type Storage struct {
+	DB *sql.DB
+}
+
+// Содание структуры которая испоотзуется в других storage
+func NewStorage(db *sql.DB) *Storage {
+	return &Storage{DB: db}
+}
+
 // Connect устанавливает соединение с БД и возвращает объект *sql.DB.
 func Connect() (*sql.DB, error) {
 	if err := godotenv.Load(); err != nil {

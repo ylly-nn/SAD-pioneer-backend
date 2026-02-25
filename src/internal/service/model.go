@@ -4,7 +4,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Service представляет данныеобщей услуги
+// Service представляет данные общей услуги
 // Соответствует таблице services в базе данных
 type Service struct {
 	ID   uuid.UUID `json:"id"`

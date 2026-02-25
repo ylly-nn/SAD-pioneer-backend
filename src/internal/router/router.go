@@ -6,10 +6,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"src/internal/company"
 	"src/internal/service"
 )
 
-func New(serviceHandler *service.Handler) http.Handler {
+func New(serviceHandler *service.Handler, companyHandler *company.Handler) http.Handler {
 	r := chi.NewRouter()
 
 	// Глобальные middleware для всех запросов
@@ -21,6 +22,13 @@ func New(serviceHandler *service.Handler) http.Handler {
 		r.Get("/", serviceHandler.GetServices)          // GET /services — список
 		r.Post("/", serviceHandler.CreateService)       // POST /services — создание
 		r.Delete("/{id}", serviceHandler.DeleteService) // DELETE /services/{id} — удаление
+	})
+
+	r.Route("/company", func(r chi.Router) {
+		r.Get("/{inn}", companyHandler.GetCompanyByInn)
+		r.Get("/", companyHandler.GetCompanies)
+		r.Post("/", companyHandler.CreateCompany)
+		r.Delete("/{inn}", companyHandler.DeleteCompany)
 	})
 
 	return r

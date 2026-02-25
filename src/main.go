@@ -6,6 +6,7 @@ import (
 
 	_ "github.com/lib/pq"
 
+	"src/internal/company"
 	"src/internal/db"
 	"src/internal/router"
 	"src/internal/service"
@@ -21,10 +22,18 @@ func main() {
 	}
 	defer database.Close()
 
-	storage := service.NewPostgresServiceStorage(database)
-	serviceManager := service.NewServiceManager(storage)
+	//Запуск обработчиков из пакета servise
+	serviceStorage := service.NewPostgresServiceStorage(database)
+	serviceManager := service.NewServiceManager(serviceStorage)
 	serviceHandler := service.NewHandler(serviceManager)
-	router := router.New(serviceHandler)
+
+	//Запуск обработчиков из пакета company
+	companyStorage := company.NewPostgresCompanyStorage(database)
+	companyManager := company.NewCompanyManager(companyStorage)
+	companyHandler := company.NewHandler(companyManager)
+
+	//Пути - src/internal/router/router.go
+	router := router.New(serviceHandler, companyHandler)
 
 	//TODO(ylly): вынести в .env Port
 	log.Println("Сервер запущен на http://localhost:8080")

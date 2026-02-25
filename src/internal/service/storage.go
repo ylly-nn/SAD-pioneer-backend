@@ -7,9 +7,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
+
+	"src/internal/db"
 )
 
-// Ошибки которые может возвращать storage
+// Ошибки которые может возвращать service/storage
 var (
 	// ErrServiceNotFound возвращается, когда услуга с указанным ID не найдена.
 	ErrServiceNotFound      = errors.New("service not found")
@@ -27,17 +29,17 @@ type ServiceStorage interface {
 
 // PostgresServiceStorage реализует ServiceStorage для PostgreSQL.
 type PostgresServiceStorage struct {
-	db *sql.DB
+	*db.Storage
 }
 
 // NewPostgresServiceStorage создаёт новый экземпляр PostgresServiceStorage.
-func NewPostgresServiceStorage(db *sql.DB) *PostgresServiceStorage {
-	return &PostgresServiceStorage{db: db}
+func NewPostgresServiceStorage(sqlDB *sql.DB) *PostgresServiceStorage {
+	return &PostgresServiceStorage{Storage: db.NewStorage(sqlDB)}
 }
 
 // GetAll возвращает список всех услуг.
 func (s *PostgresServiceStorage) GetAll() ([]Service, error) {
-	rows, err := s.db.Query(`SELECT id, name FROM services ORDER BY name`)
+	rows, err := s.DB.Query(`SELECT id, name FROM services ORDER BY name`)
 	if err != nil {
 		return nil, fmt.Errorf("query all services: %w", err)
 	}
@@ -60,7 +62,7 @@ func (s *PostgresServiceStorage) GetAll() ([]Service, error) {
 // Create - используется для создания новой услуги
 func (s *PostgresServiceStorage) Create(name string) (*Service, error) {
 	var service Service
-	err := s.db.QueryRow(`
+	err := s.DB.QueryRow(`
         INSERT INTO services (name) 
         VALUES ($1) 
         RETURNING id, name
@@ -78,7 +80,7 @@ func (s *PostgresServiceStorage) Create(name string) (*Service, error) {
 // // Delete удаляет услугу по идентификатору.
 // // Если услуга не найдена, возвращает ошибку ErrServiceNotFound.
 func (s *PostgresServiceStorage) Delete(id uuid.UUID) error {
-	result, err := s.db.Exec(`DELETE FROM services WHERE id = $1`, id)
+	result, err := s.DB.Exec(`DELETE FROM services WHERE id = $1`, id)
 	if err != nil {
 		return fmt.Errorf("delete service %v: %w", id, err)
 	}
