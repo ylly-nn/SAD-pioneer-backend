@@ -25,7 +25,6 @@ type ClientStorage interface {
 	GetCityByEmail(email string) (string, error)
 
 	//Delete - делать из all_users
-	//Delete(email string)
 }
 
 // PostgresClientStorage реализует ClientStorage для PostgreSQL.

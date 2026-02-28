@@ -13,6 +13,7 @@ type Handler struct {
 	company *CompanyManager
 }
 
+// NewHandler создаёт новый экземпляр Handler.
 func NewHandler(company *CompanyManager) *Handler {
 	return &Handler{company: company}
 }
@@ -54,7 +55,7 @@ func (h *Handler) DeleteCompany(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Company not found", http.StatusNotFound)
 			return
 		}
-		// Внутренняя ошибка сервера
+
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -62,6 +63,7 @@ func (h *Handler) DeleteCompany(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// GetCompanyByInn обрабатывает GET /companies/{inn}.
 func (h *Handler) GetCompanyByInn(w http.ResponseWriter, r *http.Request) {
 	innStr := chi.URLParam(r, "inn")
 	if innStr == "" {
@@ -110,7 +112,7 @@ func (h *Handler) CreateCompany(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Company with this INN already exists", http.StatusConflict)
 			return
 		}
-		// Ошибки валидации (обязательные поля)
+
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

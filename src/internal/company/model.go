@@ -10,12 +10,12 @@ type Company struct {
 	OrgShortName *string `json:"org_short_name,omitempty"`
 }
 
-// Два одинаковых - чтобы можно было менять Company stuct
-// Используется в эндпоинте POST /company
+// CreateCompanyRequest содержит данные для создания компании через POST /company
 type CreateCompanyRequest struct {
 	Company
 }
 
+// CompanyResponse содержит данные для ответа на запросы, связанные с компаниями
 type CompanyResponse struct {
 	INN          string  `json:"inn"`
 	KPP          *string `json:"kpp,omitempty"`

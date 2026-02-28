@@ -6,6 +6,7 @@ import (
 
 	_ "github.com/lib/pq"
 
+	"src/internal/branch"
 	"src/internal/client"
 	"src/internal/company"
 	"src/internal/db"
@@ -42,8 +43,11 @@ func main() {
 	orderManager := order.NewOrderManager(orderStorage)
 	orderHandler := order.NewHandler(orderManager)
 
+	branchStorage := branch.NewPostgresBranchStorage(database)
+	branchManager := branch.NewBranchManager(branchStorage)
+	branchHandler := branch.NewHandler(branchManager)
 	//Пути - src/internal/router/router.go
-	router := router.New(serviceHandler, companyHandler, clientHandler, orderHandler)
+	router := router.New(serviceHandler, companyHandler, clientHandler, orderHandler, branchHandler)
 
 	//TODO(ylly): вынести в .env Port
 	log.Println("Сервер запущен на http://localhost:8080")

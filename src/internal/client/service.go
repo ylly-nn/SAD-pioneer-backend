@@ -13,12 +13,12 @@ type ClientManager struct {
 	storage ClientStorage
 }
 
-// NewClientManager создаёт новый экземпляр clientManager.
+// NewClientManager создаёт новый экземпляр ClientManager
 func NewClientManager(storage ClientStorage) *ClientManager {
 	return &ClientManager{storage: storage}
 }
 
-// Создоёт новоговлдельца тс средства
+// CreateClient создаёт нового клиента.
 func (m *ClientManager) CreateClient(email string) (*Client, error) {
 	if email == "" {
 		return nil, ErrEmptyEmail

@@ -5,10 +5,12 @@ import (
 	"fmt"
 )
 
+// CompanyManager содержит бизнес-логику для работы с компаниями.
 type CompanyManager struct {
 	storage CompanyStorage
 }
 
+// NewCompanyManager создаёт новый экземпляр CompanyManager.
 func NewCompanyManager(storage CompanyStorage) *CompanyManager {
 	return &CompanyManager{storage: storage}
 }
