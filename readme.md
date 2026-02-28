@@ -11,4 +11,4 @@
 
 ### Документация
 - [Как подключиться к базе данных](https://github.com/ylly-nn/SAD-pioneer-backend/blob/main/docs/connecting_to_db.md)
--[API](https://github.com/ylly-nn/SAD-pioneer-backend/blob/main/docs/api.md)
+- [API](https://github.com/ylly-nn/SAD-pioneer-backend/blob/main/docs/api.md)
