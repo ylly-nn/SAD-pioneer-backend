@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"src/internal/auth"
 	"src/internal/branch"
 	"src/internal/client"
 	"src/internal/company"
@@ -13,7 +14,7 @@ import (
 	"src/internal/service"
 )
 
-func New(serviceHandler *service.Handler, companyHandler *company.Handler, clientHandler *client.Handler, orderHandler *order.Handler, branchHandler *branch.Handler) http.Handler {
+func New(serviceHandler *service.Handler, companyHandler *company.Handler, clientHandler *client.Handler, orderHandler *order.Handler, branchHandler *branch.Handler, authHandler *auth.Handler) http.Handler {
 	r := chi.NewRouter()
 
 	// Глобальные middleware для всех запросов
@@ -46,6 +47,14 @@ func New(serviceHandler *service.Handler, companyHandler *company.Handler, clien
 	r.Route("/order", func(r chi.Router) {
 		r.Get("/", orderHandler.GetFullAllOrders)
 		r.Post("/", orderHandler.CreateOrder)
+	})
+
+	r.Route("/auth", func(r chi.Router) {
+		r.Post("/register", authHandler.Register)
+		r.Post("/verify", authHandler.VerifyCode)
+		r.Post("/login", authHandler.Login)
+		r.Post("/refresh", authHandler.Refresh)
+		r.Post("/logout", authHandler.Logout)
 	})
 
 	return r
