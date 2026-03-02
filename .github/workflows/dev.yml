@@ -3,7 +3,10 @@ name: dev
 on:
   push:
     branches: [ "dev" ]
+    paths:
+      - 'src/**'
   workflow_dispatch:
+    
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -29,6 +32,19 @@ jobs:
         echo "DB_USER='${{secrets.DB_USER}}'" >> .env
         echo "DB_PASSWORD='${{secrets.DB_PASSWORD}}'" >> .env
         echo "DB_NAME='${{secrets.DB_NAME}}'" >> .env
+        
+        echo "SERVER_PORT='${{vars.DEV_SERVER_PORT}}'">> .env
+
+        echo "JWT_SECRET='${{secrets.DEV_JWT_SECRET}}'" .env
+        echo "ACCESS_TOKEN_TTL='${{vars.DEV_ACCESS_TOKEN_TTL}}'" >> .env
+        echo "REFRESH_TOKEN_TTL='${{vars.DEV_REFRESH_TOKEN_TTL}}'" >> .env
+        echo "VERIFICATION_TTL='${{vars.DEV_VERIFICATION_TTL}}'" >> .env
+
+        echo "SMTP_HOST='${{secrets.DEV_SMTP_HOST}}'" >> .env
+        echo "SMTP_PORT='${{vars.DEV_SMTP_PORT}}'" >> .env
+        echo "SMTP_USER='${{secrets.DEV_SMTP_USER}}'" >> .env
+        echo "SMTP_PASSWORD='${{secrets.DEV_SMTP_PASSWORD}}'" >> .env
+        echo "SMTP_FROM='${{secrets.DEV_SMTP_FROM}}'" >> .env
 
     - name: Deploy to Server via SSH
       uses: appleboy/scp-action@v0.1.7
