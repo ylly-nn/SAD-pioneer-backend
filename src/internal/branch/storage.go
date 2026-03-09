@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/google/uuid"
 
@@ -15,7 +16,9 @@ var ErrBranchServiceExists = errors.New("branch and service already exists")
 
 // BranchStorage определяет методы для работы с хранилищем branch_services.
 type BranchStorage interface {
-	Create(branchServ BranchServ) (*BranchServ, error)
+	CreateBranchServ(branchServ BranchServ) (*BranchServ, error)
+
+	CreateBranch(branch Branch) (*Branch, error)
 }
 
 // PostgresBranchStorage реализует BranchStorage для PostgreSQL.
@@ -28,11 +31,34 @@ func NewPostgresBranchStorage(sqlDB *sql.DB) *PostgresBranchStorage {
 	return &PostgresBranchStorage{Storage: db.NewStorage(sqlDB)}
 }
 
+func (s *PostgresBranchStorage) CreateBranch(branch Branch) (*Branch, error) {
+	var id uuid.UUID
+	err := s.DB.QueryRow(`
+        INSERT INTO branches (city, address, inn_company, open_time, close_time)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id
+    `, branch.City, branch.Address, branch.Inn, branch.OpenTime, branch.CloseTime).Scan(&id)
+	log.Printf("%v", branch.OpenTime)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create branch: %w", err)
+	}
+
+	created := &Branch{
+		ID:        id,
+		City:      branch.City,
+		Address:   branch.Address,
+		Inn:       branch.Inn,
+		OpenTime:  branch.OpenTime,
+		CloseTime: branch.CloseTime,
+	}
+	return created, nil
+}
+
 // Create добавляет новую запись в таблицу branch_services.
 // Все поля, кроме BusyTime, обязательны. ID генерируется базой.
 // Возвращает ошибку ErrBranchServiceExists, если пара branch+service уже существует.
 // TODO(ylly): Вынести обрпботку ошибки  ErrBranchServiceExists в servise - через get
-func (s *PostgresBranchStorage) Create(bs BranchServ) (*BranchServ, error) {
+func (s *PostgresBranchStorage) CreateBranchServ(bs BranchServ) (*BranchServ, error) {
 	if bs.Branch == uuid.Nil {
 		return nil, fmt.Errorf("branch is required")
 	}

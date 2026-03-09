@@ -30,6 +30,10 @@ func Connect() (*sql.DB, error) {
 	user := os.Getenv("DB_USER")
 	password := os.Getenv("DB_PASSWORD")
 	dbname := os.Getenv("DB_NAME")
+	timezone := os.Getenv("DB_TIMEZONE")
+	if timezone == "" {
+		timezone = "+04"
+	}
 
 	// Формируем строку подключения
 	// Для pgx/stdlib используется формат PostgreSQL-совместимый

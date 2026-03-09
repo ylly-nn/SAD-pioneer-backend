@@ -5,8 +5,11 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 // Handler обрабатывает HTTP-запросы для заказов
@@ -19,8 +22,83 @@ func NewHandler(order *OrderManager) *Handler {
 	return &Handler{order: order}
 }
 
-// GetOrdersByClient обрабатывает GET /order/by-client и возвращает список всех заказов
-// с добавленным email клиента из таблицы ts_users.
+// CreateOrder обрабатывает POST /order и создаёт новый заказ.
+func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
+	var req CreateOrderRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	order, err := h.order.Create(req)
+	if err != nil {
+		log.Printf("CreateOrder error: %v", err)
+
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(order); err != nil {
+		log.Printf("CreateOrder encode error: %v", err)
+	}
+}
+
+// GetFreeTime обрабатывает GET /branch/freetime?branch_id=<uuid>&date=YYYY-MM-DD&duration=<minutes>
+func (h *Handler) GetFreeTime(w http.ResponseWriter, r *http.Request) {
+
+	branchIDStr := r.URL.Query().Get("branch_id")
+	if branchIDStr == "" {
+		http.Error(w, "missing branch_id", http.StatusBadRequest)
+		return
+	}
+	branchID, err := uuid.Parse(branchIDStr)
+	if err != nil {
+		http.Error(w, "invalid branch_id", http.StatusBadRequest)
+		return
+	}
+
+	//  date (формат YYYY-MM-DD)
+	dateStr := r.URL.Query().Get("date")
+	if dateStr == "" {
+		http.Error(w, "missing date", http.StatusBadRequest)
+		return
+	}
+	date, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		http.Error(w, "invalid date format, expected YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	//  duration (целое положительное число минут)
+	durationStr := r.URL.Query().Get("duration")
+	if durationStr == "" {
+		http.Error(w, "missing duration", http.StatusBadRequest)
+		return
+	}
+	duration, err := strconv.Atoi(durationStr)
+	if err != nil || duration <= 0 {
+		http.Error(w, "invalid duration, must be positive integer", http.StatusBadRequest)
+		return
+	}
+
+	slots, err := h.order.GetFreeTimeForWeek(branchID, date, duration)
+	if err != nil {
+		log.Printf("GetFreeTime error: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(slots); err != nil {
+		log.Printf("GetFreeTime encode error: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+	}
+}
+
+// возвращает список всех заказов
 func (h *Handler) GetFullAllOrders(w http.ResponseWriter, r *http.Request) {
 	orders, err := h.order.GetFullAllOrders()
 	if err != nil {
@@ -86,29 +164,5 @@ func (h *Handler) GetCompanyOrders(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(orders); err != nil {
 		log.Printf("GetCompanyOrders encode error: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
-	}
-}
-
-// CreateOrder обрабатывает POST /order и создаёт новый заказ.
-func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	var req CreateOrderRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
-	order, err := h.order.Create(req)
-	if err != nil {
-		log.Printf("CreateOrder error: %v", err)
-
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(order); err != nil {
-		log.Printf("CreateOrder encode error: %v", err)
 	}
 }

@@ -52,5 +52,54 @@ func (m *BranchManager) CreateBranchService(req CreateBranchServRequest) (*Branc
 		ServiceDetails: req.ServiceDetails,
 		BusyTime:       nil,
 	}
-	return m.storage.Create(bs)
+	return m.storage.CreateBranchServ(bs)
+}
+
+// CreateBranch создаёт новый филиал с проверкой бизнес-правил.
+func (m *BranchManager) CreateBranch(req CreateBranchRequest) (*Branch, error) {
+	// Проверка обязательных полей
+	if req.City == "" {
+		return nil, fmt.Errorf("city is required")
+	}
+	if req.Address == "" {
+		return nil, fmt.Errorf("address is required")
+	}
+	if req.Inn == "" {
+		return nil, fmt.Errorf("inn_company is required")
+	}
+
+	// ИНН должен быть ровно 12 цифр
+	if len(req.Inn) != 12 {
+		return nil, fmt.Errorf("inn_company must be exactly 12 characters")
+	}
+	for _, c := range req.Inn {
+		if c < '0' || c > '9' {
+			return nil, fmt.Errorf("inn_company must contain only digits")
+		}
+	}
+
+	// Проверка времени
+	if req.OpenTime.IsZero() {
+		return nil, fmt.Errorf("open_time is required")
+	}
+	if req.CloseTime.IsZero() {
+		return nil, fmt.Errorf("close_time is required")
+	}
+	if !req.OpenTime.Before(req.CloseTime) {
+		return nil, fmt.Errorf("open_time must be before close_time")
+	}
+
+	branch := Branch{
+		City:      req.City,
+		Address:   req.Address,
+		Inn:       req.Inn,
+		OpenTime:  req.OpenTime,
+		CloseTime: req.CloseTime,
+	}
+
+	created, err := m.storage.CreateBranch(branch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create branch: %w", err)
+	}
+	return created, nil
 }
