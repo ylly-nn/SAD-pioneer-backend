@@ -33,9 +33,9 @@ jobs:
         echo "DB_PASSWORD='${{secrets.DB_PASSWORD}}'" >> .env
         echo "DB_NAME='${{secrets.DB_NAME}}'" >> .env
         
-        echo "SERVER_PORT='${{vars.DEV_SERVER_PORT}}'">> .env
+        echo "SERVER_PORT='${{vars.DEV_SERVER_PORT}}'" >> .env
 
-        echo "JWT_SECRET='${{secrets.DEV_JWT_SECRET}}'" .env
+        echo "JWT_SECRET='${{secrets.DEV_JWT_SECRET}}'" >> .env
         echo "ACCESS_TOKEN_TTL='${{vars.DEV_ACCESS_TOKEN_TTL}}'" >> .env
         echo "REFRESH_TOKEN_TTL='${{vars.DEV_REFRESH_TOKEN_TTL}}'" >> .env
         echo "VERIFICATION_TTL='${{vars.DEV_VERIFICATION_TTL}}'" >> .env
