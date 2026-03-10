@@ -38,3 +38,26 @@ func (h *Handler) CreateBranchService(w http.ResponseWriter, r *http.Request) {
 		log.Printf("CreateBranchService encode error: %v", err)
 	}
 }
+
+// CreateBranch обрабатывает POST /branch.
+func (h *Handler) CreateBranch(w http.ResponseWriter, r *http.Request) {
+	var req CreateBranchRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	branch, err := h.branch.CreateBranch(req)
+	if err != nil {
+		log.Printf("CreateBranch error: %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(branch); err != nil {
+		log.Printf("CreateBranch encode error: %v", err)
+	}
+}

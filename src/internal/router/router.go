@@ -57,5 +57,10 @@ func New(serviceHandler *service.Handler, companyHandler *company.Handler, clien
 		r.Post("/logout", authHandler.Logout)
 	})
 
+	r.Route("/branch", func(r chi.Router) {
+		r.Post("/", branchHandler.CreateBranch)
+		r.Get("/freetime", orderHandler.GetFreeTime)
+	})
+
 	return r
 }

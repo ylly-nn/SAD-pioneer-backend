@@ -87,7 +87,7 @@ func main() {
 	//Пути - src/internal/router/router.go
 	router := router.New(serviceHandler, companyHandler, clientHandler, orderHandler, branchHandler, authHandler)
 
-	//FIX(yumi): порт вынесен в .env (SERVER_PORT = 8080 (по умолчанию))
+	//FIXED(yumi): порт вынесен в .env (SERVER_PORT = 8080 (по умолчанию))
 	log.Printf("Сервер запущен на http://localhost:%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, router))
 
