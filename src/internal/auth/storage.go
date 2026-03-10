@@ -40,12 +40,11 @@ func NewPostgresUserStorage(db *sql.DB) *PostgresUserStorage {
 
 func (s *PostgresUserStorage) GetByEmail(email string) (*User, error) {
 	var user User
-	query := `SELECT login, password, type_user FROM all_users WHERE login = $1`
+	query := `SELECT login, password FROM all_users WHERE login = $1`
 
 	err := s.db.QueryRow(query, email).Scan(
 		&user.Login,
 		&user.Password,
-		&user.TypeUser,
 	)
 
 	if err != nil {
@@ -59,12 +58,11 @@ func (s *PostgresUserStorage) GetByEmail(email string) (*User, error) {
 }
 
 func (s *PostgresUserStorage) Create(user *User) error {
-	query := `INSERT INTO all_users (login, password, type_user) VALUES ($1, $2, $3)`
+	query := `INSERT INTO all_users (login, password) VALUES ($1, $2)`
 
 	_, err := s.db.Exec(query,
 		user.Login,
 		user.Password,
-		user.TypeUser,
 	)
 
 	return err

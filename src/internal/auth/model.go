@@ -15,7 +15,6 @@ const (
 type User struct {
 	Login    string `json:"login" db:"login"`
 	Password string `json:"-" db:"password"`
-	TypeUser string `json:"type_user" db:"type_user"`
 }
 
 // Данные регистрации

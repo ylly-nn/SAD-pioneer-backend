@@ -18,8 +18,8 @@ func NewAuthMiddleware(secretKey string) *AuthMiddleware {
 }
 
 // Проверка access token
-func (m *AuthMiddleware) Authenticate(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (m *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Получение токен из заголовка
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
@@ -64,5 +64,5 @@ func (m *AuthMiddleware) Authenticate(next http.HandlerFunc) http.HandlerFunc {
 		// Добавление информации о пользователе в контекст
 		ctx := context.WithValue(r.Context(), "user", claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
-	}
+	})
 }

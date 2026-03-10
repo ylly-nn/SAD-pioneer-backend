@@ -113,7 +113,6 @@ func (s *AuthManager) VerifyCode(email, code string) error {
 	user := &User{
 		Login:    email,
 		Password: data.Password,
-		TypeUser: UserTypeClient,
 	}
 
 	if err := s.userStorage.Create(user); err != nil {
@@ -194,10 +193,9 @@ func (s *AuthManager) Logout(refreshToken string) error {
 func (s *AuthManager) generateTokenPair(user *User) (*TokenResponse, error) {
 	// Access token
 	accessClaims := jwt.MapClaims{
-		"email":     user.Login,
-		"user_type": user.TypeUser,
-		"type":      "access",
-		"exp":       time.Now().Add(s.config.AccessTokenTTL).Unix(),
+		"email": user.Login,
+		"type":  "access",
+		"exp":   time.Now().Add(s.config.AccessTokenTTL).Unix(),
 	}
 
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
