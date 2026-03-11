@@ -246,11 +246,29 @@ func (m *OrderManager) GetFullAllOrders() ([]*FullOrder, error) {
 }
 
 // возвращает список заказов опредеоённого киента
-func (m *OrderManager) GetByClient(email string) ([]*FullOrder, error) {
+func (m *OrderManager) GetByClient(email string) ([]*ClientOrderResponse, error) {
 	if email == "" {
 		return nil, ErrEmptyEmail
 	}
-	return m.storage.GetByClient(email)
+
+	fullOrders, err := m.storage.GetByClient(email)
+	if err != nil {
+		return nil, err
+	}
+	var responses []*ClientOrderResponse
+	for _, fo := range fullOrders {
+		responses = append(responses, &ClientOrderResponse{
+			ID:           fo.ID,
+			NameCompany:  fo.NameCompany,
+			City:         fo.City,
+			Address:      fo.Address,
+			Service:      fo.Service,
+			StartMoment:  fo.StartMoment,
+			EndMoment:    fo.EndMoment,
+			OrderDetails: fo.OrderDetails,
+		})
+	}
+	return responses, nil
 }
 
 func (m *OrderManager) GetByCompany(inn string) ([]*FullOrder, error) {

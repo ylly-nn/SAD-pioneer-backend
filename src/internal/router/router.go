@@ -4,28 +4,29 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
 
 	"src/internal/auth"
 	"src/internal/branch"
 	"src/internal/client"
 	"src/internal/company"
+	"src/internal/middleware"
 	"src/internal/order"
 	"src/internal/service"
 )
 
-func New(serviceHandler *service.Handler, companyHandler *company.Handler, clientHandler *client.Handler, orderHandler *order.Handler, branchHandler *branch.Handler, authHandler *auth.Handler) http.Handler {
+func New(authMiddleware *middleware.AuthMiddleware, serviceHandler *service.Handler, companyHandler *company.Handler, clientHandler *client.Handler, orderHandler *order.Handler, branchHandler *branch.Handler, authHandler *auth.Handler) http.Handler {
 	r := chi.NewRouter()
 
 	// Глобальные middleware для всех запросов
-	r.Use(middleware.Logger)    // логирование запросов
-	r.Use(middleware.Recoverer) // восстановление после паник
+	r.Use(chimiddleware.Logger)    // логирование запросов
+	r.Use(chimiddleware.Recoverer) // восстановление после паник
 
 	// Маршруты для работы с услугами
 	r.Route("/services", func(r chi.Router) {
-		r.Get("/", serviceHandler.GetServices)          // GET /services — список
-		r.Post("/", serviceHandler.CreateService)       // POST /services — создание
-		r.Delete("/{id}", serviceHandler.DeleteService) // DELETE /services/{id} — удаление
+		r.Get("/", serviceHandler.GetServices)
+		r.Post("/", serviceHandler.CreateService)
+		r.Delete("/{id}", serviceHandler.DeleteService)
 	})
 
 	r.Route("/company", func(r chi.Router) {
@@ -41,7 +42,9 @@ func New(serviceHandler *service.Handler, companyHandler *company.Handler, clien
 		r.Post("/", clientHandler.CreateClient)
 		r.Put("/city", clientHandler.UpdateCity)
 		r.Get("/city/{email}", clientHandler.GetCity)
-		r.Get("/order/{email}", orderHandler.GetClientOrders)
+
+		//Защищённые маршруты
+		r.With(authMiddleware.Authenticate).Get("/orders", orderHandler.GetClientOrders)
 	})
 
 	r.Route("/order", func(r chi.Router) {

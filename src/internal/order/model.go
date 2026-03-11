@@ -66,12 +66,14 @@ type FullOrder struct {
 	OrderDetails    json.RawMessage `json:"order_details,omitempty"`
 }
 
-// OrderResponse \- Get order
-type OrderResponse struct {
-	ID              uuid.UUID       `json:"id"`
-	Users           string          `json:"users"`
-	ServiceByBranch uuid.UUID       `json:"service_by_branch"`
-	StartMoment     time.Time       `json:"start_moment"`
-	EndMoment       *time.Time      `json:"end_moment,omitempty"`
-	OrderDetails    json.RawMessage `json:"order_details"`
+// ClientOrderResponse - упрощённая информация о заказе для клиента
+type ClientOrderResponse struct {
+	ID           uuid.UUID       `json:"order_id"`
+	NameCompany  string          `json:"name_company"`
+	City         string          `json:"city"`
+	Address      string          `json:"address"`
+	Service      string          `json:"service"`
+	StartMoment  time.Time       `json:"start_moment"`
+	EndMoment    *time.Time      `json:"end_moment,omitempty"`
+	OrderDetails json.RawMessage `json:"order_details,omitempty"`
 }

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -114,13 +115,21 @@ func (h *Handler) GetFullAllOrders(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetClientOrders обрабатывает GET /order/client/{email} и возвращает полную информацию
-// о заказах конкретного клиента (email из пути).
+// GetClientOrders обрабатывает GET /client/orders и возвращает заказы текущего аутентифицированного клиента
+// Email извлекается из JWT токена, который добавляется в контекст middleware'ой AuthMiddleware.Authenticate
 func (h *Handler) GetClientOrders(w http.ResponseWriter, r *http.Request) {
 
-	email := chi.URLParam(r, "email")
-	if email == "" {
-		http.Error(w, "email is required", http.StatusBadRequest)
+	// Извлеxtybt  данных пользователя из контекста (добавлены в middleware)
+	claims, ok := r.Context().Value("user").(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "unauthorized: missing user claims", http.StatusUnauthorized)
+		return
+	}
+
+	// Получение email из claims (из тела токена)
+	email, ok := claims["email"].(string)
+	if !ok || email == "" {
+		http.Error(w, "unauthorized: email not found in token", http.StatusUnauthorized)
 		return
 	}
 
