@@ -80,9 +80,11 @@ func main() {
 
 	// Запуск обработчиков из пакета auth
 	userStorage := auth.NewPostgresUserStorage(database)
+	tsUserStorage := auth.NewPostgresTSUserStorage(database)
 	refreshTokenStorage := auth.NewPostgresRefreshTokenStorage(database)
 	verificationStorage := auth.NewMemoryVerificationStorage()
-	authService := auth.NewAuthManager(userStorage, refreshTokenStorage, verificationStorage, emailService, authConfig)
+
+	authService := auth.NewAuthManager(userStorage, refreshTokenStorage, verificationStorage, tsUserStorage, emailService, authConfig)
 	authHandler := auth.NewHandler(authService)
 
 	authMiddleware := middleware.NewAuthMiddleware(jwt.SecretKey)
@@ -90,7 +92,7 @@ func main() {
 	//Пути - src/internal/router/router.go
 	router := router.New(authMiddleware, serviceHandler, companyHandler, clientHandler, orderHandler, branchHandler, authHandler)
 
-	//FIXED(yumi): порт вынесен в .env (SERVER_PORT = 8080 (по умолчанию))
+	// Запуск сервера
 	log.Printf("Сервер запущен на http://localhost:%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, router))
 

@@ -24,6 +24,7 @@ type AuthManager struct {
 	userStorage         UserStorage
 	refreshTokenStorage RefreshTokenStorage
 	verificationStorage VerificationStorage
+	tsUserStorage       TSUserStorage
 	emailSender         configPkg.EmailSender
 	config              Config
 }
@@ -33,6 +34,7 @@ func NewAuthManager(
 	userStorage UserStorage,
 	refreshTokenStorage RefreshTokenStorage,
 	verificationStorage VerificationStorage,
+	tsUserStorage TSUserStorage,
 	emailSender configPkg.EmailSender,
 	config Config,
 ) *AuthManager {
@@ -40,6 +42,7 @@ func NewAuthManager(
 		userStorage:         userStorage,
 		refreshTokenStorage: refreshTokenStorage,
 		verificationStorage: verificationStorage,
+		tsUserStorage:       tsUserStorage,
 		emailSender:         emailSender,
 		config:              config,
 	}
@@ -117,6 +120,12 @@ func (s *AuthManager) VerifyCode(email, code string) error {
 
 	if err := s.userStorage.Create(user); err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
+	}
+
+	// Создание пользователя в ts_users
+	if err := s.tsUserStorage.Create(email); err != nil {
+		s.verificationStorage.Delete(email)
+		return fmt.Errorf("failed to create ts_user record: %w", err)
 	}
 
 	s.verificationStorage.Delete(email)

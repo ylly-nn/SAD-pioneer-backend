@@ -29,6 +29,28 @@ type VerificationStorage interface {
 	Delete(email string) error
 }
 
+// TSUserStorage интерфейс для работы с таблицей ts_users
+type TSUserStorage interface {
+	Create(email string) error
+}
+
+// PostgresTSUserStorage реализация для PostgreSQL
+type PostgresTSUserStorage struct {
+	db *sql.DB
+}
+
+func NewPostgresTSUserStorage(db *sql.DB) *PostgresTSUserStorage {
+	return &PostgresTSUserStorage{db: db}
+}
+
+func (s *PostgresTSUserStorage) Create(email string) error {
+	query := `INSERT INTO ts_users (email) VALUES ($1)`
+
+	_, err := s.db.Exec(query, email)
+
+	return err
+}
+
 // PostgresUserStorage реализация для PostgreSQL
 type PostgresUserStorage struct {
 	db *sql.DB
