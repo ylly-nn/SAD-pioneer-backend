@@ -238,16 +238,14 @@ body:
 ~~~
 
 ---
-### Get /client/order/{email}
+### Get /client/orders
+Header: Bearer <acsess_token>
 Получение заказов для опредеоленного владельца тс 
 Пример успешного ответа: nill или
 ~~~
 [
     {
-        "id": "83817fd0-ffd0-478b-b1ae-b082e8581830",
-        "users": "ivanov",
-        "service_by_branch": "e456338f-5b1c-49af-84d0-18f248d11b1d",
-        "inn": "770123456789",
+        "order_id": "83817fd0-ffd0-478b-b1ae-b082e8581830",
         "name_company": "ООО \"Ромашка\"",
         "city": "Москва",
         "address": "ул. Тверская, д. 1",
@@ -260,10 +258,7 @@ body:
         }
     },
     {
-        "id": "b433a890-5280-4fb1-ad35-e0c94d5909d3",
-        "users": "ivanov",
-        "service_by_branch": "e456338f-5b1c-49af-84d0-18f248d11b1d",
-        "inn": "770123456789",
+        "order_id": "b433a890-5280-4fb1-ad35-e0c94d5909d3",
         "name_company": "ООО \"Ромашка\"",
         "city": "Москва",
         "address": "ул. Тверская, д. 1",
