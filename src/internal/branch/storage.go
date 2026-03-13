@@ -2,6 +2,7 @@ package branch
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -12,13 +13,20 @@ import (
 )
 
 // ErrBranchServiceExists возвращается, когда запись с таким branch и service уже существует.
-var ErrBranchServiceExists = errors.New("branch and service already exists")
+var (
+	ErrBranchServiceExists   = errors.New("branch and service already exists")
+	ErrBranchServiceNotFound = errors.New("branch service not found")
+)
 
 // BranchStorage определяет методы для работы с хранилищем branch_services.
 type BranchStorage interface {
 	CreateBranchServ(branchServ BranchServ) (*BranchServ, error)
 
 	CreateBranch(branch Branch) (*Branch, error)
+
+	GetBranchByCityServ(city string, serviceID string) ([]*BrancByCityServ, error)
+
+	GetServiceDetails(branchServID uuid.UUID) ([]*ServiceDetails, error)
 }
 
 // PostgresBranchStorage реализует BranchStorage для PostgreSQL.
@@ -26,11 +34,96 @@ type PostgresBranchStorage struct {
 	*db.Storage
 }
 
-// NewPostgresBranchStorage создаёт новый экземпляр PostgresBranchStorage.
+// NewPostgresBranchStorage создаёт новый экземпляр Postg(resBranchStorage.
 func NewPostgresBranchStorage(sqlDB *sql.DB) *PostgresBranchStorage {
 	return &PostgresBranchStorage{Storage: db.NewStorage(sqlDB)}
 }
 
+// Получение деталей услуги по branch_serv
+func (s *PostgresBranchStorage) GetServiceDetails(branchServID uuid.UUID) ([]*ServiceDetails, error) {
+	var rawJSON json.RawMessage
+	err := s.DB.QueryRow(`SELECT service_detalis FROM branch_services WHERE id = $1`, branchServID).Scan(&rawJSON)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("branch service not found")
+		}
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrBranchServiceNotFound
+		}
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+
+	// Если JSON пустой (например, NULL или "null"), возвращаем пустой срез
+	if len(rawJSON) == 0 || string(rawJSON) == "null" {
+		return []*ServiceDetails{}, nil
+	}
+
+	var detailsMap map[string]int
+	if err := json.Unmarshal(rawJSON, &detailsMap); err != nil {
+		return nil, fmt.Errorf("failed to parse service details: %w", err)
+	}
+
+	result := make([]*ServiceDetails, 0, len(detailsMap))
+	for detail, duration := range detailsMap {
+		result = append(result, &ServiceDetails{
+			Detail:   detail,
+			Duration: duration,
+		})
+	}
+
+	return result, nil
+}
+
+// Получение филала в определённом городе с определённой услугой
+func (s *PostgresBranchStorage) GetBranchByCityServ(city string, serviceID string) ([]*BrancByCityServ, error) {
+	rows, err := s.DB.Query(`
+	SELECT 
+	bs.id AS branch_service_id,
+    b.id, 
+    b.address,
+    cmp.org_short_name
+	FROM branches b
+	JOIN branch_services bs ON b.id = bs.branch
+	JOIN companies cmp ON b.inn_company = cmp.inn
+	WHERE b.city = $1 AND bs.service = $2
+`, city, serviceID)
+
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	var result []*BrancByCityServ
+	for rows.Next() {
+		var bcs BrancByCityServ
+		var address, orgShortName sql.NullString
+
+		// Сканирование UUID напрямую в поля типа uuid.UUID (поддерживается драйвером lib/pq)
+		if err := rows.Scan(
+			&bcs.BranchServId,
+			&bcs.BranchId,
+			&address,
+			&orgShortName); err != nil {
+			return nil, fmt.Errorf("scan failed: %w", err)
+		}
+
+		// Обработка потенциально NULL-значений
+		if address.Valid {
+			bcs.Address = address.String
+		}
+		if orgShortName.Valid {
+			bcs.CompanyName = orgShortName.String
+		}
+
+		result = append(result, &bcs)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error: %w", err)
+	}
+	return result, nil
+}
+
+// Создание филиала
 func (s *PostgresBranchStorage) CreateBranch(branch Branch) (*Branch, error) {
 	var id uuid.UUID
 	err := s.DB.QueryRow(`

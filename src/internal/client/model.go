@@ -21,3 +21,8 @@ type ClientResponse struct {
 type CreateClientRequest struct {
 	Email string `json:"email"`
 }
+
+// Используется в handler UpdateCity
+type UpdateCityRequest struct {
+	City string `json:"city"`
+}

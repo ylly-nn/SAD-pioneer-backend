@@ -45,7 +45,6 @@ type OpenCloseBranch struct {
 
 // CreateOrderRequest используется для POST /orders.
 type CreateOrderRequest struct {
-	Users           string          `json:"users"`
 	ServiceByBranch uuid.UUID       `json:"service_by_branch"`
 	StartMoment     time.Time       `json:"start_moment"`
 	OrderDetails    json.RawMessage `json:"order_details,omitempty"`

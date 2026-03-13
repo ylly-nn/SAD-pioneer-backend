@@ -2,11 +2,19 @@ package client
 
 import (
 	"errors"
+	"regexp"
+	"strings"
+
+	"src/internal/city"
 )
 
 var (
-	ErrEmptyEmail = errors.New("email cannot be empty")
+	ErrEmptyEmail  = errors.New("email cannot be empty")
+	ErrEmptyCity   = errors.New("city cannot be empty")
+	ErrInvalidCity = errors.New("city is not in the list of Russian cities")
 )
+
+var hyphenSpaces = regexp.MustCompile(`\s*-\s*`)
 
 // ClientManager содержит бизнес-логику для работы с владельцами тс (клиентами)
 type ClientManager struct {
@@ -29,11 +37,29 @@ func (m *ClientManager) CreateClient(email string) (*Client, error) {
 // UpdateCity обновляет город клиента.
 // Если email пуст, возвращает ErrEmptyEmail.
 // Ошибки storage пробрасываются наружу.
-func (m *ClientManager) UpdateCity(email string, city string) error {
+func (m *ClientManager) UpdateCity(email string, cityName string) error {
 	if email == "" {
 		return ErrEmptyEmail
 	}
-	return m.storage.UpdateCity(email, city)
+
+	if cityName == "" {
+		return ErrEmptyCity
+	}
+
+	fields := strings.Fields(cityName)
+	if len(fields) == 0 {
+		return ErrEmptyCity
+	}
+	cityName = strings.Join(fields, " ")
+
+	cityName = hyphenSpaces.ReplaceAllString(cityName, "-")
+
+	canonicalCity, ok := city.ValidCitiesMap[strings.ToLower(cityName)]
+	if !ok {
+		return ErrInvalidCity
+	}
+
+	return m.storage.UpdateCity(email, canonicalCity)
 }
 
 // GetCityByEmail возвращает город клиента.

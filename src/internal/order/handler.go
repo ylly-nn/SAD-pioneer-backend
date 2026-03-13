@@ -25,14 +25,29 @@ func NewHandler(order *OrderManager) *Handler {
 
 // CreateOrder обрабатывает POST /order и создаёт новый заказ.
 func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
+
+	claims, ok := r.Context().Value("user").(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "unauthorized: missing user claims", http.StatusUnauthorized)
+		return
+	}
+
+	// Получение email из claims (из тела токена)
+	email, ok := claims["email"].(string)
+	if !ok || email == "" {
+		http.Error(w, "unauthorized: email not found in token", http.StatusUnauthorized)
+		return
+	}
+
 	var req CreateOrderRequest
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
-	order, err := h.order.Create(req)
+	order, err := h.order.Create(email, req)
 	if err != nil {
 		log.Printf("CreateOrder error: %v", err)
 

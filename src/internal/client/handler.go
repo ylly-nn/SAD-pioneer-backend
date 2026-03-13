@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // Handler обрабатывает HTTP-запросы для клиентов
@@ -56,21 +56,36 @@ func (h *Handler) CreateClient(w http.ResponseWriter, r *http.Request) {
 
 // UpdateCity обрабатывает PUT /client/city (или PATCH)
 func (h *Handler) UpdateCity(w http.ResponseWriter, r *http.Request) {
-	type request struct {
-		Email string `json:"email"`
-		City  string `json:"city"`
+
+	claims, ok := r.Context().Value("user").(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "unauthorized: missing user claims", http.StatusUnauthorized)
+		return
 	}
-	var req request
+
+	// Получение email из claims (из тела токена)
+	email, ok := claims["email"].(string)
+	if !ok || email == "" {
+		http.Error(w, "unauthorized: email not found in token", http.StatusUnauthorized)
+		return
+	}
+
+	var req UpdateCityRequest
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
-	if err := h.client.UpdateCity(req.Email, req.City); err != nil {
+	if err := h.client.UpdateCity(email, req.City); err != nil {
 		switch {
+		case errors.Is(err, ErrInvalidCity):
+			http.Error(w, "City is not in the list of Russian cities", http.StatusBadRequest)
 		case errors.Is(err, ErrEmptyEmail):
 			http.Error(w, "Email cannot be empty", http.StatusBadRequest)
+		case errors.Is(err, ErrEmptyCity):
+			http.Error(w, "City cannot be empty", http.StatusBadRequest)
 		case errors.Is(err, ErrClientNotFound):
 			http.Error(w, "Client not found", http.StatusNotFound)
 		default:
@@ -83,9 +98,18 @@ func (h *Handler) UpdateCity(w http.ResponseWriter, r *http.Request) {
 
 // GetCity обрабатывает GET /client/city/{email}
 func (h *Handler) GetCity(w http.ResponseWriter, r *http.Request) {
-	email := chi.URLParam(r, "email")
-	if email == "" {
-		http.Error(w, "email parameter is required", http.StatusBadRequest)
+
+	// Извлеxtybt  данных пользователя из контекста (добавлены в middleware)
+	claims, ok := r.Context().Value("user").(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "unauthorized: missing user claims", http.StatusUnauthorized)
+		return
+	}
+
+	// Получение email из claims (из тела токена)
+	email, ok := claims["email"].(string)
+	if !ok || email == "" {
+		http.Error(w, "unauthorized: email not found in token", http.StatusUnauthorized)
 		return
 	}
 

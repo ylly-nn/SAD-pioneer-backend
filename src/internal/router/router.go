@@ -24,9 +24,11 @@ func New(authMiddleware *middleware.AuthMiddleware, serviceHandler *service.Hand
 
 	// Маршруты для работы с услугами
 	r.Route("/services", func(r chi.Router) {
-		r.Get("/", serviceHandler.GetServices)
 		r.Post("/", serviceHandler.CreateService)
 		r.Delete("/{id}", serviceHandler.DeleteService)
+
+		//Защищённые маршруты
+		r.With(authMiddleware.Authenticate).Get("/", serviceHandler.GetServices)
 	})
 
 	r.Route("/company", func(r chi.Router) {
@@ -40,16 +42,18 @@ func New(authMiddleware *middleware.AuthMiddleware, serviceHandler *service.Hand
 
 	r.Route("/client", func(r chi.Router) {
 		r.Post("/", clientHandler.CreateClient)
-		r.Put("/city", clientHandler.UpdateCity)
-		r.Get("/city/{email}", clientHandler.GetCity)
 
 		//Защищённые маршруты
+		r.With(authMiddleware.Authenticate).Put("/city", clientHandler.UpdateCity)
+		r.With(authMiddleware.Authenticate).Get("/city", clientHandler.GetCity)
 		r.With(authMiddleware.Authenticate).Get("/orders", orderHandler.GetClientOrders)
 	})
 
 	r.Route("/order", func(r chi.Router) {
 		r.Get("/", orderHandler.GetFullAllOrders)
-		r.Post("/", orderHandler.CreateOrder)
+
+		//Защищённые маршруты
+		r.With(authMiddleware.Authenticate).Post("/", orderHandler.CreateOrder)
 	})
 
 	r.Route("/auth", func(r chi.Router) {
@@ -62,7 +66,11 @@ func New(authMiddleware *middleware.AuthMiddleware, serviceHandler *service.Hand
 
 	r.Route("/branch", func(r chi.Router) {
 		r.Post("/", branchHandler.CreateBranch)
-		r.Get("/freetime", orderHandler.GetFreeTime)
+
+		//Защищённые маршруты
+		r.With(authMiddleware.Authenticate).Get("/freetime", orderHandler.GetFreeTime)
+		r.With(authMiddleware.Authenticate).Get("/service/details/{id_branchserv}", branchHandler.GetServiceDetails)
+		r.With(authMiddleware.Authenticate).Get("/", branchHandler.GetBranchesByCityAndService)
 	})
 
 	return r

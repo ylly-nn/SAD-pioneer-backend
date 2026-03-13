@@ -103,3 +103,12 @@ func (m *BranchManager) CreateBranch(req CreateBranchRequest) (*Branch, error) {
 	}
 	return created, nil
 }
+
+func (m *BranchManager) GetBranchByCityServ(city string, serviceID string) ([]*BrancByCityServ, error) {
+
+	return m.storage.GetBranchByCityServ(city, serviceID)
+}
+
+func (m *BranchManager) GetServiceDetails(branchServID uuid.UUID) ([]*ServiceDetails, error) {
+	return m.storage.GetServiceDetails(branchServID)
+}
