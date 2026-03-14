@@ -8,6 +8,7 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 
+	"src/internal/admin"
 	"src/internal/auth"
 	"src/internal/branch"
 	"src/internal/client"
@@ -87,10 +88,18 @@ func main() {
 	authService := auth.NewAuthManager(userStorage, refreshTokenStorage, verificationStorage, tsUserStorage, emailService, authConfig)
 	authHandler := auth.NewHandler(authService)
 
-	authMiddleware := middleware.NewAuthMiddleware(jwt.SecretKey)
+	adminStorage := admin.NewPostgresAdminStorage(database)
+	partnerRequestStorage := admin.NewPostgresPartnerRequestStorage(database)
+	companyStorageFromAdmin := admin.NewPostgresCompanyStorage(database)
+	partnersUsersStorage := admin.NewPostgresPartnersUsersStorage(database)
 
+	adminManager := admin.NewAdminManager(userStorage, partnerRequestStorage, companyStorageFromAdmin, partnersUsersStorage, adminStorage, emailService, admin.Config(authConfig))
+	adminHandler := admin.NewHandler(adminManager)
+
+	authMiddleware := middleware.NewAuthMiddleware(jwt.SecretKey)
+	adminMiddleware := middleware.NewAdminMiddleware(adminManager)
 	//Пути - src/internal/router/router.go
-	router := router.New(authMiddleware, serviceHandler, companyHandler, clientHandler, orderHandler, branchHandler, authHandler)
+	router := router.New(authMiddleware, adminMiddleware, serviceHandler, companyHandler, clientHandler, orderHandler, branchHandler, authHandler, adminHandler)
 
 	// Запуск сервера
 	log.Printf("Сервер запущен на http://localhost:%s", port)

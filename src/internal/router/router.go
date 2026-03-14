@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 
+	"src/internal/admin"
 	"src/internal/auth"
 	"src/internal/branch"
 	"src/internal/client"
@@ -15,7 +16,7 @@ import (
 	"src/internal/service"
 )
 
-func New(authMiddleware *middleware.AuthMiddleware, serviceHandler *service.Handler, companyHandler *company.Handler, clientHandler *client.Handler, orderHandler *order.Handler, branchHandler *branch.Handler, authHandler *auth.Handler) http.Handler {
+func New(authMiddleware *middleware.AuthMiddleware, adminMiddleware *middleware.AdminMiddleware, serviceHandler *service.Handler, companyHandler *company.Handler, clientHandler *client.Handler, orderHandler *order.Handler, branchHandler *branch.Handler, authHandler *auth.Handler, adminHandler *admin.Handler) http.Handler {
 	r := chi.NewRouter()
 
 	// Глобальные middleware для всех запросов
@@ -71,6 +72,25 @@ func New(authMiddleware *middleware.AuthMiddleware, serviceHandler *service.Hand
 		r.With(authMiddleware.Authenticate).Get("/freetime", orderHandler.GetFreeTime)
 		r.With(authMiddleware.Authenticate).Get("/service/details/{id_branchserv}", branchHandler.GetServiceDetails)
 		r.With(authMiddleware.Authenticate).Get("/", branchHandler.GetBranchesByCityAndService)
+	})
+
+	r.Route("/partner", func(r chi.Router) {
+		// Защищенные маршруты
+		r.Use(authMiddleware.Authenticate)
+		r.Post("/request", adminHandler.CreatePartnerRequest)
+		r.Get("/request/{inn}", adminHandler.GetRequestStatus)
+	})
+
+	r.Route("/admin", func(r chi.Router) {
+		// Защищенные маршруты + проверка на админа
+		r.Use(authMiddleware.Authenticate)
+		r.Use(adminMiddleware.RequireAdmin)
+
+		r.Get("/partner-requests/new", adminHandler.GetNewRequests)
+		r.Get("/partner-requests/pending", adminHandler.GetPendingRequests)
+		r.Post("/partner-requests/take", adminHandler.TakeRequestToWork)
+		r.Post("/partner-requests/approve", adminHandler.ApprovePartnerRequest)
+		r.Post("/partner-requests/reject", adminHandler.RejectPartnerRequest)
 	})
 
 	return r
