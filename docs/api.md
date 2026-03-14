@@ -1,26 +1,347 @@
 # Документация по api - реализованные эндпоинты
-
-## /services
+# Логика  входа
+## /auth
 ---
-### GET /services 
+### POST /auth/register
+Регистрация нового пользователя (отправка кода подтверждения на email)
+
+body:
+~~~
+{
+    "email": "email@mail.ru",
+    "password": "Password123!"
+}
+~~~
+Пример успешного ответа
+~~~
+{
+    "email": "email@mail.ru",
+    "message": "Verification code sent to email"
+}
+~~~
+---
+### POST /auth/verify
+Подтверждение кода регистрации и создание пользователя
+
+body:
+~~~
+{
+    "email": "email@mail.ru",
+    "code": "a1b2c3"
+}
+~~~
+Пример успешного ответа
+~~~
+{
+    "message": "User successfully registered"
+}
+~~~
+---
+### POST /auth/login
+Вход в систему, получение токенов доступа
+
+body:
+~~~
+{
+    "email": "email@mail.ru",
+    "password": "Password123!"
+}
+~~~
+Пример успешного ответа
+~~~
+{
+     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "token_type": "Bearer",
+    "expires_in": 900
+}
+~~~
+---
+### POST /auth/logout
+Выход из системы
+
+body:
+~~~
+{
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+~~~
+Пример успешного ответа
+~~~
+{
+    "message": "Successfully logged out"
+}
+~~~
+---
+### POST /auth/refresh
+Обновление пары токенов по refresh токену
+
+body:
+~~~
+{
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+~~~
+Пример успешного ответа
+~~~
+{
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "token_type": "Bearer",
+    "expires_in": 900
+}
+~~~
+---
+
+
+
+
+
+
+
+
+
+# Ветка пользователtq тс
+### Get /client/orders
+Header: Bearer <acsess_token>
+Получение заказов для опредеоленного владельца тс 
+Пример успешного ответа: nill или
+~~~
+[
+    {
+        "order_id": "83817fd0-ffd0-478b-b1ae-b082e8581830",
+        "name_company": "ООО \"Ромашка\"",
+        "city": "Москва",
+        "address": "ул. Тверская, д. 1",
+        "service": "Шиномонтаж",
+        "start_moment": "2026-03-16T09:30:00+04:00",
+        "end_moment": "2026-03-16T11:05:00+04:00",
+        "order_details": {
+            "Шлифовка": 20,
+            "Полировка": 75
+        }
+    },
+    {
+        "order_id": "b433a890-5280-4fb1-ad35-e0c94d5909d3",
+        "name_company": "ООО \"Ромашка\"",
+        "city": "Москва",
+        "address": "ул. Тверская, д. 1",
+        "service": "Шиномонтаж",
+        "start_moment": "2026-03-17T09:00:00+04:00",
+        "end_moment": "2026-03-17T10:35:00+04:00",
+        "order_details": {
+            "Шлифовка": 20,
+            "Полировка": 75
+        }
+    }
+]
+~~~
+### GET /services - защищённый
+Header: Authorization: Bearer <токен>
 Список всех улуг (общий: шмномотаж, мойка и тд)
 
 Пример успешного ответа:
 ~~~
 [
     {
-        "id": "03db1f58-2bbd-481c-8d93-b2828871b376",
-        "name": "мойка"
+        "id": "27ddc0e1-5db0-4c3e-9406-b0d37fa6b4b6",
+        "name": "Автомойка"
     },
     {
-        "id": "6b0ea372-91ee-4791-8739-946bd917e1c4",
-        "name": "сушилка"
+        "id": "878b0701-600b-409b-b8fe-3453887fc039",
+        "name": "Шиномонтаж"
     }
 ]
 ~~~
 Ответ ```[]``` - тоже успешный
 
 ---
+### GET /client/city - защищённый
+Header: Authorization: Bearer <токен>
+Получение грода клиента по email - для автозаполнения
+
+Пример успешного ответа:
+~~~
+{
+    "city": "Южно-Сахалинск"
+}
+~~~
+---
+### PUT /client/city - защищённый
+Header: Authorization: Bearer <токен>
+Обновление города клиента - запоминается каждый раз при выборе города
+
+body:
+~~~
+{
+    "city": "<city>"
+}
+~~~
+Успешный ответ - ```200 OK```
+
+---
+
+### Get /branch?city=<city>&service=<service> - защищённый
+Получение списка филиалов по городу и id услуги
+Header: Authorization: Bearer <токен>
+
+
+Пример успешного ответа:
+~~~
+[
+    {
+        "id_branchserv": "0bb7a20d-4ffc-46cd-b5e5-a549a179ce2a",
+        "id_branch": "89d74b8a-8cee-44fa-96ea-6aec1e8ad66b",
+        "address": "ул. Тверская, д. 1",
+        "org_short_name": "ООО \"Ромашка\""
+    },
+    {
+        "id_branchserv": "e43c3985-9d5c-4658-a4cb-4542d2a38ee3",
+        "id_branch": "89d74b8a-8cee-44fa-96ea-6aec1e8ad66b",
+        "address": "ул. Тверская, д. 1",
+        "org_short_name": "ООО \"Ромашка\""
+    }
+]
+~~~
+
+
+---
+### Get branch/service/details/{id_branchserv} - защищённый
+Получение деталей услуги определённого филиала 
+
+id_branchserv - получали на предыдущем шаге
+
+Header: Authorization: Bearer <токен>
+
+
+Пример успешного ответа
+~~~
+[
+    {
+        "detail": "price",
+        "duration_min": 2500
+    },
+    {
+        "detail": "duration_min",
+        "duration_min": 60
+    }
+]
+~~~
+
+
+---
+### Get /branch/freetime?branch_id=<branch_id>&date=<yyyy-mm-dd>&duration=<min> - защищённый
+Header: Authorization: Bearer <токен>
+
+
+Получени свободных слотов - время
+
+Пример:
+```/branch/freetime?branch_id=89d74b8a-8cee-44fa-96ea-6aec1e8ad66b&date=2026-03-16&duration=300```
+Ответ:
+~~~
+[
+    {
+        "date": "2026-03-16T00:00:00Z",
+        "intervals": null
+    },
+    {
+        "date": "2026-03-17T00:00:00Z",
+        "intervals": [
+            "2026-03-17T10:35:00+04:00",
+            "2026-03-17T10:50:00+04:00",
+            "2026-03-17T11:05:00+04:00",
+            "2026-03-17T11:20:00+04:00",
+            "2026-03-17T11:35:00+04:00",
+            "2026-03-17T11:50:00+04:00"
+        ]
+    },
+    {
+        "date": "2026-03-18T00:00:00Z",
+        "intervals": null
+    },
+    {
+        "date": "2026-03-19T00:00:00Z",
+        "intervals": null
+    },
+    {
+        "date": "2026-03-20T00:00:00Z",
+        "intervals": [
+            "2026-03-20T09:00:00+04:00",
+            "2026-03-20T09:15:00+04:00",
+            "2026-03-20T09:30:00+04:00",
+            "2026-03-20T09:45:00+04:00",
+            "2026-03-20T10:00:00+04:00",
+            "2026-03-20T10:15:00+04:00"
+        ]
+    },
+    {
+        "date": "2026-03-21T00:00:00Z",
+        "intervals": [
+            "2026-03-21T09:00:00+04:00",
+            "2026-03-21T09:15:00+04:00",
+            "2026-03-21T09:30:00+04:00",
+            "2026-03-21T09:45:00+04:00",
+            "2026-03-21T10:00:00+04:00",
+            "2026-03-21T10:15:00+04:00",
+            "2026-03-21T10:30:00+04:00",
+            "2026-03-21T10:45:00+04:00",
+            "2026-03-21T11:00:00+04:00",
+            "2026-03-21T11:15:00+04:00",
+            "2026-03-21T11:30:00+04:00",
+            "2026-03-21T11:45:00+04:00",
+            "2026-03-21T12:00:00+04:00"
+        ]
+    },
+    {
+        "date": "2026-03-22T00:00:00Z",
+        "intervals": null
+    }
+]
+~~~
+---
+### Post /order - защищённый
+Header: Authorization: Bearer <токен>
+
+Получение списка всех заказов
+
+если дата-время не будет попадать в свободные слоты - которе получаются через GET branch/freetime?branch_id=89d74b8a-8cee-44fa-96ea-6aec1e8ad66b&date=2026-03-16&duration=180 - будет выдавать ошибку 
+```start moment is not available for the requested duration```
+
+body:
+~~~
+{
+    "service_by_branch": "e456338f-5b1c-49af-84d0-18f248d11b1d",
+    "start_moment": "2026-03-16T11:20:00+04:00",
+    "order_details": {
+        "Полировка": 30,
+        "Мойка днища":70
+    }
+}
+~~~
+Формат order_details - обязательный (услуга-минуты)
+
+Пример успешного ответа: 
+~~~
+{
+    "id": "244a6a7a-bc6c-4825-ad01-b483d308d77d",
+    "users": "ylly_nn@mail.ru",
+    "service_by_branch": "e456338f-5b1c-49af-84d0-18f248d11b1d",
+    "start_moment": "2026-03-20T05:00:00Z",
+    "end_moment": "2026-03-20T05:30:00Z",
+    "order_details": {
+        "Полировка": 30,
+        "Мойка днища":70
+    }
+}
+~~~
+---
+
+
+
+
+
+## /services
 
 ### POST /services
 Создание новой услуги
@@ -214,102 +535,16 @@ body
 }
 ~~~
 ---
-### PUT /client/city
-Обновление города клиента - запоминается каждый раз при выборе города
-
-body:
-~~~
-{
-    "email": "email@mail.ru",
-    "city": "city"
-}
-~~~
-Успешный ответ - ```200 OK```
 
 
-### GET /client/city/{email}
-Получение грода клиента по email - для автозаполнения
 
-Пример успешного ответа:
-~~~
-{
-    "city": "city"
-}
-~~~
 
 ---
-### Get /client/orders
-Header: Bearer <acsess_token>
-Получение заказов для опредеоленного владельца тс 
-Пример успешного ответа: nill или
-~~~
-[
-    {
-        "order_id": "83817fd0-ffd0-478b-b1ae-b082e8581830",
-        "name_company": "ООО \"Ромашка\"",
-        "city": "Москва",
-        "address": "ул. Тверская, д. 1",
-        "service": "Шиномонтаж",
-        "start_moment": "2026-03-16T09:30:00+04:00",
-        "end_moment": "2026-03-16T11:05:00+04:00",
-        "order_details": {
-            "Шлифовка": 20,
-            "Полировка": 75
-        }
-    },
-    {
-        "order_id": "b433a890-5280-4fb1-ad35-e0c94d5909d3",
-        "name_company": "ООО \"Ромашка\"",
-        "city": "Москва",
-        "address": "ул. Тверская, д. 1",
-        "service": "Шиномонтаж",
-        "start_moment": "2026-03-17T09:00:00+04:00",
-        "end_moment": "2026-03-17T10:35:00+04:00",
-        "order_details": {
-            "Шлифовка": 20,
-            "Полировка": 75
-        }
-    }
-]
-~~~
+
 ---
 ---
 
 ## /order
-### Post /order
-Получение списка всех заказов
-если дата-время не будет попадать в свободные слоты - которе получаются через GET branch/freetime?branch_id=89d74b8a-8cee-44fa-96ea-6aec1e8ad66b&date=2026-03-16&duration=180 - будет выдавать ошибку 
-```start moment is not available for the requested duration```
-
-body:
-~~~
-{
-    "users": "ivanov",
-    "service_by_branch": "e456338f-5b1c-49af-84d0-18f248d11b1d",
-    "start_moment": "2026-03-16T11:20:00+04:00",
-    "order_details": {
-        "Полировка": 75,
-        "Шлифовка": 20
-    }
-}
-~~~
-Формат order_details - обязательный (услуга-минуты)
-
-Пример успешного ответа: 
-~~~
-{
-    "id": "ac1e4508-3e97-4fd1-b11b-3e506d1bf4a0",
-    "users": "ivanov",
-    "service_by_branch": "e456338f-5b1c-49af-84d0-18f248d11b1d",
-    "start_moment": "2026-03-16T07:20:00Z",
-    "end_moment": "2026-03-16T08:55:00Z",
-    "order_details": {
-        "Полировка": 75,
-        "Шлифовка": 20
-    }
-}
-~~~
----
 ### GET /order
 
 Получение списка всех заказов 
@@ -353,182 +588,3 @@ body:
 ]
 ~~~
 ---
----
-## /auth
----
-### POST /auth/register
-Регистрация нового пользователя (отправка кода подтверждения на email)
-
-body:
-~~~
-{
-    "email": "email@mail.ru",
-    "password": "Password123!"
-}
-~~~
-Пример успешного ответа
-~~~
-{
-    "email": "email@mail.ru",
-    "message": "Verification code sent to email"
-}
-~~~
----
-### POST /auth/verify
-Подтверждение кода регистрации и создание пользователя
-
-body:
-~~~
-{
-    "email": "email@mail.ru",
-    "code": "a1b2c3"
-}
-~~~
-Пример успешного ответа
-~~~
-{
-    "message": "User successfully registered"
-}
-~~~
----
-### POST /auth/login
-Вход в систему, получение токенов доступа
-
-body:
-~~~
-{
-    "email": "email@mail.ru",
-    "password": "Password123!"
-}
-~~~
-Пример успешного ответа
-~~~
-{
-     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "token_type": "Bearer",
-    "expires_in": 900
-}
-~~~
----
-### POST /auth/logout
-Выход из системы
-
-body:
-~~~
-{
-    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-~~~
-Пример успешного ответа
-~~~
-{
-    "message": "Successfully logged out"
-}
-~~~
----
-### POST /auth/refresh
-Обновление пары токенов по refresh токену
-
-body:
-~~~
-{
-    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-~~~
-Пример успешного ответа
-~~~
-{
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "token_type": "Bearer",
-    "expires_in": 900
-}
-~~~
----
-## /branch
-
-### Get /branch/freetime?branch_id=<branch_id>&date=<yyyy-mm-dd>&duration=<min>
-Пример:
-```http://localhost:8080/branch/freetime?branch_id=89d74b8a-8cee-44fa-96ea-6aec1e8ad66b&date=2026-03-16&duration=240```
-Ответ:
-~~~
-[
-    {
-        "date": "2026-03-16T00:00:00Z",
-        "intervals": [
-            "2026-03-16T12:55:00+04:00"
-        ]
-    },
-    {
-        "date": "2026-03-17T00:00:00Z",
-        "intervals": [
-            "2026-03-17T10:35:00+04:00",
-            "2026-03-17T10:50:00+04:00",
-            "2026-03-17T11:05:00+04:00",
-            "2026-03-17T11:20:00+04:00",
-            "2026-03-17T11:35:00+04:00",
-            "2026-03-17T11:50:00+04:00",
-            "2026-03-17T12:05:00+04:00",
-            "2026-03-17T12:20:00+04:00",
-            "2026-03-17T12:35:00+04:00",
-            "2026-03-17T12:50:00+04:00"
-        ]
-    },
-    {
-        "date": "2026-03-18T00:00:00Z",
-        "intervals": null
-    },
-    {
-        "date": "2026-03-19T00:00:00Z",
-        "intervals": [
-            "2026-03-19T12:35:00+04:00",
-            "2026-03-19T12:50:00+04:00"
-        ]
-    },
-    {
-        "date": "2026-03-20T00:00:00Z",
-        "intervals": [
-            "2026-03-20T09:00:00+04:00",
-            "2026-03-20T09:15:00+04:00",
-            "2026-03-20T09:30:00+04:00",
-            "2026-03-20T09:45:00+04:00",
-            "2026-03-20T10:00:00+04:00",
-            "2026-03-20T10:15:00+04:00",
-            "2026-03-20T10:30:00+04:00",
-            "2026-03-20T10:45:00+04:00",
-            "2026-03-20T11:00:00+04:00",
-            "2026-03-20T11:15:00+04:00"
-        ]
-    },
-    {
-        "date": "2026-03-21T00:00:00Z",
-        "intervals": [
-            "2026-03-21T09:00:00+04:00",
-            "2026-03-21T09:15:00+04:00",
-            "2026-03-21T09:30:00+04:00",
-            "2026-03-21T09:45:00+04:00",
-            "2026-03-21T10:00:00+04:00",
-            "2026-03-21T10:15:00+04:00",
-            "2026-03-21T10:30:00+04:00",
-            "2026-03-21T10:45:00+04:00",
-            "2026-03-21T11:00:00+04:00",
-            "2026-03-21T11:15:00+04:00",
-            "2026-03-21T11:30:00+04:00",
-            "2026-03-21T11:45:00+04:00",
-            "2026-03-21T12:00:00+04:00",
-            "2026-03-21T12:15:00+04:00",
-            "2026-03-21T12:30:00+04:00",
-            "2026-03-21T12:45:00+04:00",
-            "2026-03-21T13:00:00+04:00"
-        ]
-    },
-    {
-        "date": "2026-03-22T00:00:00Z",
-        "intervals": [
-            "2026-03-22T12:35:00+04:00",
-            "2026-03-22T12:50:00+04:00"
-        ]
-    }
-]
-~~~
