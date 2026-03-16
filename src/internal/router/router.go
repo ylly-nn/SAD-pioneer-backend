@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
+	httpSwagger "github.com/swaggo/http-swagger"
 
 	"src/internal/admin"
 	"src/internal/auth"
@@ -22,6 +23,11 @@ func New(authMiddleware *middleware.AuthMiddleware, adminMiddleware *middleware.
 	// Глобальные middleware для всех запросов
 	r.Use(chimiddleware.Logger)    // логирование запросов
 	r.Use(chimiddleware.Recoverer) // восстановление после паник
+
+	// Swagger UI — доступен по /swagger/index.html
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.InstanceName("swagger"),
+	))
 
 	// Маршруты для работы с услугами
 	r.Route("/services", func(r chi.Router) {

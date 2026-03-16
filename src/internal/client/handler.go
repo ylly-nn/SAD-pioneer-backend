@@ -96,7 +96,7 @@ func (h *Handler) UpdateCity(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// GetCity обрабатывает GET /client/city/{email}
+// GetCity обрабатывает GET /client/city/
 func (h *Handler) GetCity(w http.ResponseWriter, r *http.Request) {
 
 	// Извлеxtybt  данных пользователя из контекста (добавлены в middleware)
@@ -126,7 +126,7 @@ func (h *Handler) GetCity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := map[string]string{"city": city}
+	response := GetCityResponse{City: city}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }

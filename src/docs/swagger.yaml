@@ -1,0 +1,378 @@
+basePath: /
+definitions:
+  branch.BrancByCityServ:
+    properties:
+      address:
+        example: ул. Тверская, д. 1
+        type: string
+      id_branch:
+        example: 0bb7a20d-4ffc-46cd-b5e5-a549a179ce2a
+        format: uuid
+        type: string
+      id_branchserv:
+        example: 0bb7a20d-4ffc-46cd-b5e5-a549a179ce2a
+        format: uuid
+        type: string
+      org_short_name:
+        example: ООО Ромашка
+        type: string
+    type: object
+  branch.ServiceDetails:
+    properties:
+      detail:
+        example: Мойка колёс
+        type: string
+      duration_min:
+        example: 35
+        type: integer
+    type: object
+  client.GetCityResponse:
+    properties:
+      city:
+        example: Москва
+        type: string
+    type: object
+  client.UpdateCityRequest:
+    properties:
+      city:
+        example: мОсква
+        type: string
+    type: object
+  order.ClientOrderResponse:
+    properties:
+      address:
+        example: ул. Тверская, д. 1
+        type: string
+      city:
+        example: Москва
+        type: string
+      end_moment:
+        example: "2026-03-16T11:05:00+04:00"
+        format: yyyy-mm-ddThh:mm:ss+(Z)hh:mm
+        type: string
+      name_company:
+        example: ООО "Ромашка"
+        type: string
+      order_details:
+        type: object
+      order_id:
+        example: 83817fd0-ffd0-478b-b1ae-b082e8581830
+        type: string
+      service:
+        example: Шиномонтаж
+        type: string
+      start_moment:
+        example: "2026-03-16T09:30:00+04:00"
+        format: yyyy-mm-ddThh:mm:ss+(Z)hh:mm
+        type: string
+    type: object
+  order.CreateOrderRequest:
+    properties:
+      order_details:
+        type: object
+      service_by_branch:
+        example: 89d74b8a-8cee-44fa-96ea-6aec1e8ad66b
+        format: uuid
+        type: string
+      start_moment:
+        example: "2026-03-16T11:20:00+04:00"
+        format: yyyy-mm-ddThh-mm-ss+hh:mm
+        type: string
+    type: object
+  order.DailySlots:
+    properties:
+      date:
+        example: "2026-03-16T00:00:00Z"
+        format: yyyy-mm-ddT00:00:00Z
+        type: string
+      intervals:
+        example:
+        - '[2026-03-17T10:35:00+04:00'
+        - ' 2026-03-17T10:50:00+04:00'
+        - ' 2026-03-17T11:05:00+04:00]'
+        items:
+          type: string
+        type: array
+    type: object
+  order.Order:
+    properties:
+      end_moment:
+        example: "2026-04-16T05:20:00Z"
+        type: string
+      id:
+        example: e77fd339-9478-4375-82c1-215936a68b8a
+        type: string
+      order_details:
+        type: object
+      service_by_branch:
+        example: 917e77fa-1672-4dfb-8507-d5755b31ebb3
+        type: string
+      start_moment:
+        example: "2026-04-16T05:00:00Z"
+        type: string
+      users:
+        example: ex@mail.ru
+        type: string
+    type: object
+  service.ServiceResponse:
+    properties:
+      id:
+        example: 83817fd0-ffd0-478b-b1ae-b082e8581830
+        format: uuid
+        type: string
+      name:
+        example: Aвтомойка
+        type: string
+    type: object
+info:
+  contact: {}
+  description: API для сервиса  Pioneer.
+  title: Pioneer API
+paths:
+  /branch:
+    get:
+      description: Получить филиал для определённого города с определённым сервисом
+      parameters:
+      - description: Город
+        in: query
+        name: city
+        required: true
+        type: string
+      - description: ID Сервиса
+        in: query
+        name: service
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/branch.BrancByCityServ'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить филиал для заказа
+      tags:
+      - branch
+  /branch/freetime:
+    get:
+      description: Возвращает доступное время записи в определёный филиал с учётом
+        общей длительности услуги на неделю
+      parameters:
+      - description: ID Филиала
+        in: query
+        name: branch_id
+        required: true
+        type: string
+      - description: Дата начала недели формат yyyy-mm-dd
+        in: query
+        name: date
+        required: true
+        type: string
+      - description: Общая длительность услуги в минутах
+        in: query
+        name: duration
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/order.DailySlots'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить доступное время для записи
+      tags:
+      - branch
+  /branch/service/details/{id_branchserv}:
+    get:
+      description: Получение состава услуги по id branchserv для авторизованных пользователей
+      parameters:
+      - description: branchserv ID
+        in: path
+        name: id_branchserv
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/branch.ServiceDetails'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить состав услуги
+      tags:
+      - branch
+  /client/city:
+    get:
+      description: Возвращает город авторизованного клиента
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/client.GetCityResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить город клиента
+      tags:
+      - client
+    put:
+      description: Обновляет город клиента, если тот есть в списке городов (в любом
+        регистре)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/client.UpdateCityRequest'
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Обновить город клиента
+      tags:
+      - client
+  /client/orders:
+    get:
+      description: Возвращает все заказы, принадлежащие авторизованному клиенту.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/order.ClientOrderResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить заказы клиента
+      tags:
+      - clients
+  /order:
+    post:
+      consumes:
+      - application/json
+      description: Создаёт новый заказ для авторизованного клиента на доступное время.
+      parameters:
+      - description: Данные для создания заказа
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/order.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/order.Order'
+        "400":
+          description: Invalid request body or business logic error
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Создать заказ
+      tags:
+      - order
+  /services:
+    get:
+      description: Возвращает список общих услуг и их ID
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/service.ServiceResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить список услуг
+      tags:
+      - services
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

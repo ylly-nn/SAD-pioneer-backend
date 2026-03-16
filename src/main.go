@@ -8,6 +8,7 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 
+	_ "src/docs"
 	"src/internal/admin"
 	"src/internal/auth"
 	"src/internal/branch"

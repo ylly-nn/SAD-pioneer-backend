@@ -19,10 +19,10 @@ type Branch struct {
 
 // Использзуется для Get /branch?city=<city>&service=<service>
 type BrancByCityServ struct {
-	BranchServId uuid.UUID `json:"id_branchserv"`
-	BranchId     uuid.UUID `json:"id_branch"`
-	Address      string    `json:"address"`
-	CompanyName  string    `json:"org_short_name"`
+	BranchServId uuid.UUID `json:"id_branchserv" example:"0bb7a20d-4ffc-46cd-b5e5-a549a179ce2a" format:"uuid"`
+	BranchId     uuid.UUID `json:"id_branch" example:"0bb7a20d-4ffc-46cd-b5e5-a549a179ce2a" format:"uuid"`
+	Address      string    `json:"address" example:"ул. Тверская, д. 1"`
+	CompanyName  string    `json:"org_short_name" example:"ООО Ромашка"`
 }
 
 // Используется для обработки POST /branch
@@ -53,6 +53,6 @@ type CreateBranchServRequest struct {
 
 // Список уточнений услуги - деталь длительность
 type ServiceDetails struct {
-	Detail   string `json:"detail"`
-	Duration int    `json:"duration_min"`
+	Detail   string `json:"detail" example:"Мойка колёс"`
+	Duration int    `json:"duration_min" example:"35"`
 }

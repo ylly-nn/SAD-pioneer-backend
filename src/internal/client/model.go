@@ -24,5 +24,9 @@ type CreateClientRequest struct {
 
 // Используется в handler UpdateCity
 type UpdateCityRequest struct {
-	City string `json:"city"`
+	City string `json:"city" example:"мОсква" `
+}
+
+type GetCityResponse struct {
+	City string `json:"city" example:"Москва"`
 }

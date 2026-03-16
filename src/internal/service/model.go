@@ -20,6 +20,6 @@ type CreateServiceRequest struct {
 // ServiceResponse представляет данные услуги, возвращаемые клиенту.
 // Используется в ответах на GET /services
 type ServiceResponse struct {
-	ID   uuid.UUID `json:"id"`
-	Name string    `json:"name"`
+	ID   uuid.UUID `json:"id" example:"83817fd0-ffd0-478b-b1ae-b082e8581830" format:"uuid"`
+	Name string    `json:"name" example:"Aвтомойка"`
 }
