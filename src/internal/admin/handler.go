@@ -89,6 +89,18 @@ func (h *Handler) TakeRequestToWork(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GetAllRequests обрабатывает GET /admin/partner-requests/, получает все заявки
+func (h *Handler) GetAllRequests(w http.ResponseWriter, r *http.Request) {
+	requests, err := h.admin.GetAllRequests()
+	if err != nil {
+		http.Error(w, "Failed to get requests", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(requests)
+}
+
 // GetNewRequests обрабатывает GET /admin/partner-requests/new, получает только новые заявки
 func (h *Handler) GetNewRequests(w http.ResponseWriter, r *http.Request) {
 	requests, err := h.admin.GetRequestsByStatus("new")
@@ -104,6 +116,30 @@ func (h *Handler) GetNewRequests(w http.ResponseWriter, r *http.Request) {
 // GetPendingRequests обрабатывает GET /admin/partner-requests/pending, получает только заявки в работе
 func (h *Handler) GetPendingRequests(w http.ResponseWriter, r *http.Request) {
 	requests, err := h.admin.GetRequestsByStatus("pending")
+	if err != nil {
+		http.Error(w, "Failed to get requests", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(requests)
+}
+
+// GetApprovedRequests обрабатывает GET /admin/partner-requests/approved, получает только принятые заявки
+func (h *Handler) GetApprovedRequests(w http.ResponseWriter, r *http.Request) {
+	requests, err := h.admin.GetRequestsByStatus("approved")
+	if err != nil {
+		http.Error(w, "Failed to get requests", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(requests)
+}
+
+// GetRejectedRequests обрабатывает GET /admin/partner-requests/rejected, получает только отклоненные заявки
+func (h *Handler) GetRejectedRequests(w http.ResponseWriter, r *http.Request) {
+	requests, err := h.admin.GetRequestsByStatus("rejected")
 	if err != nil {
 		http.Error(w, "Failed to get requests", http.StatusInternalServerError)
 		return

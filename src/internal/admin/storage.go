@@ -210,7 +210,7 @@ func (s *PostgresPartnerRequestStorage) GetAll() ([]*PartnerRequest, error) {
 
 // Получение заявок с определенным статусом
 func (s *PostgresPartnerRequestStorage) GetByStatus(status string) ([]*PartnerRequest, error) {
-	rows, err := s.db.Query(`SELECT status, inn, kpp, ogrn, org_name, org_short_name,
+	rows, err := s.db.Query(`SELECT status, user_email, inn, kpp, ogrn, org_name, org_short_name,
                                      name, surname, patronymic, email, phone_number, info 
                               FROM part_req WHERE status = $1`, status)
 	if err != nil {
@@ -222,7 +222,7 @@ func (s *PostgresPartnerRequestStorage) GetByStatus(status string) ([]*PartnerRe
 	for rows.Next() {
 		var req PartnerRequest
 		err := rows.Scan(
-			&req.Status, &req.INN, &req.KPP, &req.OGRN,
+			&req.Status, &req.UserEmail, &req.INN, &req.KPP, &req.OGRN,
 			&req.OrgName, &req.OrgShortName,
 			&req.Name, &req.Surname, &req.Patronymic,
 			&req.Email, &req.Phone, &req.Info,
