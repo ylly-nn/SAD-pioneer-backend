@@ -35,8 +35,8 @@ type RefreshTokenData struct {
 }
 
 type RegisterRequest struct {
-	Email    string `json:"email" validate:"required,email,min=6,max=100"`
-	Password string `json:"password" validate:"required,min=8,max=20,password"`
+	Email    string `json:"email" validate:"required,email,min=6,max=64"`
+	Password string `json:"password" validate:"required,min=8,max=24,password"`
 }
 
 // Запрос на подтверждение кода

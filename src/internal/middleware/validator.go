@@ -3,6 +3,7 @@ package middleware
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"unicode"
 
 	"github.com/go-playground/validator/v10"
@@ -25,6 +26,7 @@ type PasswordValidationResult struct {
 	HasLower    bool
 	HasNumber   bool
 	HasSpecial  bool
+	HasSpace    bool
 	LetterCount int
 	IsLatin     bool
 	Length      int
@@ -60,17 +62,68 @@ func SendValidationError(w http.ResponseWriter, err error) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// validateEmailDetail проверяет email на допустимые символы
+func validateEmailDetail(email string) (isValid bool, invalidChars string) {
+	// Проверка на пробелы
+	if strings.Contains(email, " ") {
+		return false, "email не должен содержать пробелы"
+	}
+
+	// Проверка на количество @
+	atCount := strings.Count(email, "@")
+	if atCount != 1 {
+		return false, "email должен содержать ровно один символ '@'"
+	}
+
+	parts := strings.Split(email, "@")
+	name := parts[0]
+	domain := parts[1]
+
+	// Проверка имени (до @)
+	if len(name) == 0 {
+		return false, "отсутствует часть перед @"
+	}
+
+	// Проверка домена (после @)
+	if len(domain) == 0 {
+		return false, "отсутствует домен после @"
+	}
+
+	// Проверка на точку в конце
+	if strings.HasSuffix(domain, ".") {
+		return false, "домен не может заканчиваться точкой"
+	}
+	// Проверка email на допустимые символы
+	allowedChars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_@"
+	for _, char := range email {
+		charStr := string(char)
+		if !strings.Contains(allowedChars, charStr) {
+			return false, "email содержит недопустимый символ '" + charStr + "'. Разрешены: латиница, цифры, '.', '-', '_', '@'"
+		}
+	}
+
+	// Проверка, что домен не начинается с точки
+	if strings.HasPrefix(domain, ".") {
+		return false, "домен не может начинаться с точки"
+	}
+	return true, ""
+}
+
 // getEmailErrorMessage возвращает понятное сообщение для ошибок email
 func getEmailErrorMessage(e validator.FieldError) string {
 	switch e.Tag() {
 	case "required":
 		return "Email обязателен для заполнения"
 	case "email":
+		email := e.Value().(string)
+		if isValid, message := validateEmailDetail(email); !isValid {
+			return message
+		}
 		return "Некорректный формат email"
 	case "min":
 		return "Email должен содержать минимум 6 символов"
 	case "max":
-		return "Email должен содержать максимум 100 символов"
+		return "Email должен содержать максимум 64 символа"
 	default:
 		return "Некорректный email"
 	}
@@ -85,8 +138,8 @@ func getPasswordErrorMessage(e validator.FieldError) string {
 	if len(password) < 8 {
 		messages = append(messages, "минимум 8 символов")
 	}
-	if len(password) > 20 {
-		messages = append(messages, "максимум 20 символов")
+	if len(password) > 24 {
+		messages = append(messages, "максимум 24 символа")
 	}
 
 	result := validatePasswordDetail(password)
@@ -101,13 +154,16 @@ func getPasswordErrorMessage(e validator.FieldError) string {
 		messages = append(messages, "хотя бы одну цифру")
 	}
 	if !result.HasSpecial {
-		messages = append(messages, "хотя бы один спецсимвол (!@#$%^)")
+		messages = append(messages, "хотя бы один спецсимвол")
 	}
 	if result.LetterCount < 4 {
 		messages = append(messages, "минимум 4 буквы")
 	}
 	if !result.IsLatin {
 		messages = append(messages, "только латинские буквы")
+	}
+	if result.HasSpace {
+		messages = append(messages, "не должен содержать пробелы")
 	}
 
 	if len(messages) == 0 {
@@ -123,6 +179,8 @@ func validatePasswordDetail(password string) PasswordValidationResult {
 		Length: len(password),
 	}
 
+	specialChars := "~!?@#$%^&*_-+()[]{}/\\\"'.,:;"
+
 	for _, char := range password {
 		switch {
 		case unicode.IsUpper(char):
@@ -133,8 +191,10 @@ func validatePasswordDetail(password string) PasswordValidationResult {
 			result.LetterCount++
 		case unicode.IsNumber(char):
 			result.HasNumber = true
-		case unicode.IsPunct(char) || unicode.IsSymbol(char):
+		case strings.ContainsRune(specialChars, char):
 			result.HasSpecial = true
+		case char == ' ':
+			result.HasSpace = true
 		}
 	}
 
@@ -177,7 +237,7 @@ func joinMessages(messages []string) string {
 	result := ""
 	for i, msg := range messages {
 		if i == len(messages)-1 {
-			result += "и " + msg
+			result += " и " + msg
 		} else if i == 0 {
 			result += msg
 		} else {
