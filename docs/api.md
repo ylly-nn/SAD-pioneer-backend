@@ -588,3 +588,288 @@ body
 ]
 ~~~
 ---
+
+
+
+# Ветка для администраторов + заявок для организаций
+## /partner
+---
+### POST /request
+Создание заявки
+
+Header: Authorization: Bearer <токен>
+
+body:
+~~~
+{
+    "inn": "<inn>", 
+    "kpp": "<kpp>", 
+    "ogrn": "<ogrn>", 
+    "org_name": "<org_name>", 
+    "org_short_name": "<org_short_name>", 
+    "name": "<name>", 
+    "surname": "<surname>", 
+    "patronymic": "<patronymic>", 
+    "email": "<email>", 
+    "phone": "<phone>", 
+    "info": "<info>"
+}
+~~~
+Пример успешного ответа
+~~~
+{
+    "message": "Partner request created successfully"
+}
+~~~
+---
+### GET /request/{inn}
+Получение информации по заявке
+
+Header: Authorization: Bearer <токен>
+
+~~~
+GET /partner/request/234567890123
+~~~
+
+Пример успешного ответа
+~~~
+{
+   "status":"<status>",
+   "inn":"<inn>",
+   "kpp":"<kpp>",
+   "ogrn":"<ogrn>",
+   "org_name":"<org_name>",
+   "org_short_name":"<org_short_name>",
+   "name":"<name>",
+   "surname":"<surname>",
+   "patronymic":"<patronymic>",
+   "email":"<email>",
+   "phone":"<phone>",
+   "info":"<info>"
+}
+~~~
+---
+
+## /admin
+---
+### GET /partner-requests/
+Получение всех заявок от партнеров
+
+Header: Authorization: Bearer <токен>
+
+body:
+~~~
+{
+}
+~~~
+Пример успешного ответа
+~~~
+{
+    [
+        {
+        "status":"<status>",
+        "inn":"<inn>",
+        "kpp":"<kpp>",
+        "ogrn":"<ogrn>",
+        "org_name":"<org_name>",
+        "org_short_name":"<org_short_name>",
+        "name":"<name>",
+        "surname":"<surname>",
+        "patronymic":"<patronymic>",
+        "email":"<email>",
+        "phone":"<phone>",
+        "info":"<info>"
+        },
+    ]
+}
+~~~
+---
+### GET /partner-requests/new
+Получение всех новых заявок от партнеров
+
+Header: Authorization: Bearer <токен>
+
+body:
+~~~
+{
+}
+~~~
+Пример успешного ответа
+~~~
+{
+    [
+        {
+        "status":"new",
+        "inn":"<inn>",
+        "kpp":"<kpp>",
+        "ogrn":"<ogrn>",
+        "org_name":"<org_name>",
+        "org_short_name":"<org_short_name>",
+        "name":"<name>",
+        "surname":"<surname>",
+        "patronymic":"<patronymic>",
+        "email":"<email>",
+        "phone":"<phone>",
+        "info":"<info>"
+        },
+    ]
+}
+~~~
+---
+### GET /partner-requests/pending
+Получение заявок от партнеров, находящихся в работе
+
+Header: Authorization: Bearer <токен>
+
+body:
+~~~
+{
+}
+~~~
+Пример успешного ответа
+~~~
+{
+    [
+        {
+        "status":"pending",
+        "inn":"<inn>",
+        "kpp":"<kpp>",
+        "ogrn":"<ogrn>",
+        "org_name":"<org_name>",
+        "org_short_name":"<org_short_name>",
+        "name":"<name>",
+        "surname":"<surname>",
+        "patronymic":"<patronymic>",
+        "email":"<email>",
+        "phone":"<phone>",
+        "info":"<info>"
+        },
+    ]
+}
+~~~
+---
+### GET /partner-requests/approved
+Получение всех принятых заявок от партнеров
+
+Header: Authorization: Bearer <токен>
+
+body:
+~~~
+{
+}
+~~~
+Пример успешного ответа
+~~~
+{
+    [
+        {
+        "status":"approved",
+        "inn":"<inn>",
+        "kpp":"<kpp>",
+        "ogrn":"<ogrn>",
+        "org_name":"<org_name>",
+        "org_short_name":"<org_short_name>",
+        "name":"<name>",
+        "surname":"<surname>",
+        "patronymic":"<patronymic>",
+        "email":"<email>",
+        "phone":"<phone>",
+        "info":"<info>"
+        },
+    ]
+}
+~~~
+---
+### GET /partner-requests/rejected
+Получение всех отклоненных заявок от партнеров
+
+Header: Authorization: Bearer <токен>
+
+body:
+~~~
+{
+}
+~~~
+Пример успешного ответа
+~~~
+{
+    [
+        {
+        "status":"rejected",
+        "inn":"<inn>",
+        "kpp":"<kpp>",
+        "ogrn":"<ogrn>",
+        "org_name":"<org_name>",
+        "org_short_name":"<org_short_name>",
+        "name":"<name>",
+        "surname":"<surname>",
+        "patronymic":"<patronymic>",
+        "email":"<email>",
+        "phone":"<phone>",
+        "info":"<info>"
+        },
+    ]
+}
+~~~
+---
+### POST /partner-requests/take
+Смена статуса заявки с "новая" на "в работе"
+
+Header: Authorization: Bearer <токен>
+
+body:
+~~~
+{
+    "inn": "<inn>", 
+}
+~~~
+
+Пример успешного ответа
+~~~
+{
+   "inn":"<inn>",
+   "message":"Request taken to work",
+   "status":"pending"
+}
+~~~
+---
+### POST /partner-requests/approve
+Смена статуса заявки с "в работе" на "принята". Создание компании и первого пользователя в ней
+
+Header: Authorization: Bearer <токен>
+
+body:
+~~~
+{
+    "inn": "<inn>", 
+}
+~~~
+
+Пример успешного ответа
+~~~
+{
+   "message":"Partner request approved"
+}
+~~~
+---
+### POST /partner-requests/reject
+Смена статуса заявки с "в работе" на "отклонена"
+
+Header: Authorization: Bearer <токен>
+
+body:
+~~~
+{
+    "inn": "<inn>", 
+}
+~~~
+
+Пример успешного ответа
+~~~
+{
+   "inn":"<inn>",
+   "message":"Request rejected",
+   "status":"rejected"
+}
+~~~
+---
