@@ -594,7 +594,7 @@ body
 # Ветка для администраторов + заявок для организаций
 ## /partner
 ---
-### POST /request
+### POST /partner/request
 Создание заявки
 
 Header: Authorization: Bearer <токен>
@@ -622,7 +622,7 @@ body:
 }
 ~~~
 ---
-### GET /request/{inn}
+### GET /partner/request/{inn}
 Получение информации по заявке
 
 Header: Authorization: Bearer <токен>
@@ -652,7 +652,7 @@ GET /partner/request/234567890123
 
 ## /admin
 ---
-### GET /partner-requests/
+### GET /admin/partner-requests/
 Получение всех заявок от партнеров
 
 Header: Authorization: Bearer <токен>
@@ -684,7 +684,7 @@ body:
 }
 ~~~
 ---
-### GET /partner-requests/new
+### GET /admin/partner-requests/new
 Получение всех новых заявок от партнеров
 
 Header: Authorization: Bearer <токен>
@@ -716,7 +716,7 @@ body:
 }
 ~~~
 ---
-### GET /partner-requests/pending
+### GET /admin/partner-requests/pending
 Получение заявок от партнеров, находящихся в работе
 
 Header: Authorization: Bearer <токен>
@@ -748,7 +748,7 @@ body:
 }
 ~~~
 ---
-### GET /partner-requests/approved
+### GET /admin/partner-requests/approved
 Получение всех принятых заявок от партнеров
 
 Header: Authorization: Bearer <токен>
@@ -780,7 +780,7 @@ body:
 }
 ~~~
 ---
-### GET /partner-requests/rejected
+### GET /admin/partner-requests/rejected
 Получение всех отклоненных заявок от партнеров
 
 Header: Authorization: Bearer <токен>
@@ -812,7 +812,7 @@ body:
 }
 ~~~
 ---
-### POST /partner-requests/take
+### POST /admin/partner-requests/take
 Смена статуса заявки с "новая" на "в работе"
 
 Header: Authorization: Bearer <токен>
@@ -833,7 +833,7 @@ body:
 }
 ~~~
 ---
-### POST /partner-requests/approve
+### POST /admin/partner-requests/approve
 Смена статуса заявки с "в работе" на "принята". Создание компании и первого пользователя в ней
 
 Header: Authorization: Bearer <токен>
@@ -852,7 +852,7 @@ body:
 }
 ~~~
 ---
-### POST /partner-requests/reject
+### POST /admin/partner-requests/reject
 Смена статуса заявки с "в работе" на "отклонена"
 
 Header: Authorization: Bearer <токен>
