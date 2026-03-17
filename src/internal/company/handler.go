@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // Handler обрабатывает HTTP-запросы для компаний
@@ -63,21 +64,28 @@ func (h *Handler) DeleteCompany(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// GetCompanyByInn обрабатывает GET /companies/{inn}.
-func (h *Handler) GetCompanyByInn(w http.ResponseWriter, r *http.Request) {
-	innStr := chi.URLParam(r, "inn")
-	if innStr == "" {
-		http.Error(w, "INN is required", http.StatusBadRequest)
+// GetCompany обрабатывает GET /companies/{inn}.
+func (h *Handler) GetCompany(w http.ResponseWriter, r *http.Request) {
+
+	claims, ok := r.Context().Value("user").(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "unauthorized: missing user claims", http.StatusUnauthorized)
 		return
 	}
 
-	if len(innStr) != 12 {
-		http.Error(w, "INN must be 12 characters", http.StatusBadRequest)
+	// Получение email из claims (из тела токена)
+	email, ok := claims["email"].(string)
+	if !ok || email == "" {
+		http.Error(w, "unauthorized: email not found in token", http.StatusUnauthorized)
 		return
 	}
 
-	company, err := h.company.GetCompanyByInn(innStr)
+	company, err := h.company.GetCompany(email)
 	if err != nil {
+		if errors.Is(err, ErrUserNotPartner) {
+			http.Error(w, "User does not have a company", http.StatusForbidden)
+			return
+		}
 		if errors.Is(err, ErrCompanyNotFound) {
 			http.Error(w, "Company not found", http.StatusNotFound)
 			return

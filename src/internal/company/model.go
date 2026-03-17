@@ -23,3 +23,15 @@ type CompanyResponse struct {
 	OrgName      *string `json:"org_name,omitempty"`
 	OrgShortName *string `json:"org_short_name,omitempty"`
 }
+
+// IsPartnerUsers используется для проверки есть ли у пользователся организация
+type IsPartnersUsers struct {
+	IsPartner bool
+	Inn       string
+}
+
+// PartnersUsers используется для передачи email и inn - если есть
+type PartnersUsers struct {
+	Email string
+	Inn   string
+}

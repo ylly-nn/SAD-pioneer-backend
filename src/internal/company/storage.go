@@ -18,6 +18,8 @@ var (
 
 // CompanyStorage определяет методы для работы с компаниями
 type CompanyStorage interface {
+	GetPartUserByEmail(email string) (PartnersUsers, error)
+
 	GetAll() ([]Company, error)
 
 	GetCompanyByInn(inn string) (*Company, error)
@@ -35,6 +37,29 @@ type PostgresCompanyStorage struct {
 // NewPostgresCompanyStorage создаёт новый экземпляр PostgresCompanyStorage.
 func NewPostgresCompanyStorage(sqlDB *sql.DB) *PostgresCompanyStorage {
 	return &PostgresCompanyStorage{Storage: db.NewStorage(sqlDB)}
+}
+
+// GetPartUserByEmail - получение партнёра по email
+func (s *PostgresCompanyStorage) GetPartUserByEmail(email string) (PartnersUsers, error) {
+	var psrtnerUser PartnersUsers
+	row := s.DB.QueryRow(`
+        SELECT email, inn
+        FROM partners_users
+        WHERE email = $1
+    `, email)
+
+	err := row.Scan(&psrtnerUser.Email, &psrtnerUser.Inn)
+	if err != nil {
+		// Если запись не найдена, возвращаем пустую структуру без ошибки.
+		if errors.Is(err, sql.ErrNoRows) {
+			return PartnersUsers{}, nil
+		}
+		// Любая другая ошибка возвращается как есть.
+		return PartnersUsers{}, fmt.Errorf("failed to scan partner user: %w", err)
+	}
+
+	return psrtnerUser, nil
+
 }
 
 // GetAll возвращает список всех компаний

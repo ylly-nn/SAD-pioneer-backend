@@ -39,12 +39,13 @@ func New(authMiddleware *middleware.AuthMiddleware, adminMiddleware *middleware.
 	})
 
 	r.Route("/company", func(r chi.Router) {
-		r.Get("/{inn}", companyHandler.GetCompanyByInn)
-		r.Get("/", companyHandler.GetCompanies)
 		r.Post("/", companyHandler.CreateCompany)
 		r.Delete("/{inn}", companyHandler.DeleteCompany)
 		r.Get("/order/{inn}", orderHandler.GetCompanyOrders)
 		r.Post("/branch/service", branchHandler.CreateBranchService)
+
+		//Защищёные маршруты
+		r.With(authMiddleware.Authenticate).Get("/", companyHandler.GetCompany)
 	})
 
 	r.Route("/client", func(r chi.Router) {

@@ -5,6 +5,10 @@ import (
 	"fmt"
 )
 
+var (
+	ErrUserNotPartner = errors.New("the user does not have a company")
+)
+
 // CompanyManager содержит бизнес-логику для работы с компаниями.
 type CompanyManager struct {
 	storage CompanyStorage
@@ -30,10 +34,16 @@ func (m *CompanyManager) DeleteCompany(inn string) error {
 	return m.storage.Delete(inn)
 }
 
-// GetCompanyByInn возвращает компанию  по инн
+// GetCompany возвращает компанию  по инн
 // Если компания не найдена, возвращает ошибку ErrCompanyNotFound.
-func (m *CompanyManager) GetCompanyByInn(inn string) (*Company, error) {
-	company, err := m.storage.GetCompanyByInn(inn)
+func (m *CompanyManager) GetCompany(email string) (*Company, error) {
+	userIsPartner, err := m.UserIsPartner(email)
+
+	if userIsPartner.IsPartner != true {
+		return nil, ErrUserNotPartner
+	}
+
+	company, err := m.storage.GetCompanyByInn(userIsPartner.Inn)
 	if err != nil {
 		return nil, fmt.Errorf("get company by inn: %w", err)
 	}
@@ -76,4 +86,23 @@ func (m *CompanyManager) CreateCompany(company Company) (*Company, error) {
 		return nil, fmt.Errorf("create company: %w", err)
 	}
 	return created, nil
+}
+
+// Проверка что у пользователя есть организация
+// Если у пользователя организация есть вернётся IsParnersUsers{IsPartner: true, Inn: "строка с инн"
+// Если у пользователя организация нет вернётся IsParnersUsers{IsPartner: false, Inn: ничего
+func (m *CompanyManager) UserIsPartner(email string) (IsPartnersUsers, error) {
+	partUser, err := m.storage.GetPartUserByEmail(email)
+	if err != nil {
+		return IsPartnersUsers{IsPartner: false}, fmt.Errorf("failed to check if user is partner: %w", err)
+	}
+
+	if partUser.Email == "" {
+		return IsPartnersUsers{IsPartner: false}, nil
+	}
+
+	return IsPartnersUsers{
+		IsPartner: true,
+		Inn:       partUser.Inn,
+	}, nil
 }
