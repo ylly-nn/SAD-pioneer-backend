@@ -13,6 +13,13 @@ var validate = validator.New()
 
 func init() {
 	validate.RegisterValidation("password", validatePassword)
+	validate.RegisterValidation("email", validateEmail)
+}
+
+func validateEmail(fl validator.FieldLevel) bool {
+	email := fl.Field().String()
+	isValid, _ := validateEmailDetail(email)
+	return isValid
 }
 
 // ValidateStruct валидирует структуру и возвращает ошибку
@@ -34,7 +41,13 @@ type PasswordValidationResult struct {
 
 // SendValidationError отправляет структурированную ошибку валидации
 func SendValidationError(w http.ResponseWriter, err error) {
-	validationErrors := err.(validator.ValidationErrors)
+
+	validationErrors, ok := err.(validator.ValidationErrors)
+	if !ok {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	fields := make(map[string]string)
 
 	for _, e := range validationErrors {
@@ -69,6 +82,18 @@ func validateEmailDetail(email string) (isValid bool, invalidChars string) {
 		return false, "email не должен содержать пробелы"
 	}
 
+	// Проверка email на допустимые символы
+	allowedChars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_@"
+	for _, char := range email {
+		if char > 127 {
+			return false, "email содержит недопустимые символы. Разрешены только латинские буквы, цифры и символы . - _ @"
+		}
+		charStr := string(char)
+		if !strings.Contains(allowedChars, charStr) {
+			return false, "email содержит недопустимый символ '" + charStr + "'. Разрешены: латиница, цифры, '.', '-', '_', '@'"
+		}
+	}
+
 	// Проверка на количество @
 	atCount := strings.Count(email, "@")
 	if atCount != 1 {
@@ -92,14 +117,6 @@ func validateEmailDetail(email string) (isValid bool, invalidChars string) {
 	// Проверка на точку в конце
 	if strings.HasSuffix(domain, ".") {
 		return false, "домен не может заканчиваться точкой"
-	}
-	// Проверка email на допустимые символы
-	allowedChars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_@"
-	for _, char := range email {
-		charStr := string(char)
-		if !strings.Contains(allowedChars, charStr) {
-			return false, "email содержит недопустимый символ '" + charStr + "'. Разрешены: латиница, цифры, '.', '-', '_', '@'"
-		}
 	}
 
 	// Проверка, что домен не начинается с точки
@@ -179,7 +196,7 @@ func validatePasswordDetail(password string) PasswordValidationResult {
 		Length: len(password),
 	}
 
-	specialChars := "~!?@#$%^&*_-+()[]{}/\\\"'.,:;"
+	specialChars := "~!?@#$%^&*_-+()[]{}/'.,:;"
 
 	for _, char := range password {
 		switch {
@@ -222,7 +239,7 @@ func validatePassword(fl validator.FieldLevel) bool {
 		result.LetterCount >= 4 &&
 		result.IsLatin &&
 		len(password) >= 8 &&
-		len(password) <= 20
+		len(password) <= 24
 }
 
 // joinMessages объединяет сообщения в строку

@@ -37,7 +37,6 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 
 	// Валидируем с помощью middleware
 	if err := middleware.ValidateStruct(req); err != nil {
-		// middleware сам отправит структурированный ответ с ошибками
 		middleware.SendValidationError(w, err)
 		return
 	}
