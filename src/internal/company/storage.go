@@ -27,6 +27,8 @@ type CompanyStorage interface {
 	Create(Company) (*Company, error)
 
 	Delete(inn string) error
+
+	GetBranchesByInn(inn string) ([]*CompanyBranch, error)
 }
 
 // PostgresCompanyStorage реализует CompanyStorage для PostgreSQL.
@@ -37,6 +39,35 @@ type PostgresCompanyStorage struct {
 // NewPostgresCompanyStorage создаёт новый экземпляр PostgresCompanyStorage.
 func NewPostgresCompanyStorage(sqlDB *sql.DB) *PostgresCompanyStorage {
 	return &PostgresCompanyStorage{Storage: db.NewStorage(sqlDB)}
+}
+
+// GetBrancesByCompany получение филиалов по инн компании
+// возвращает масиив с филиалами
+func (s *PostgresCompanyStorage) GetBranchesByInn(inn string) ([]*CompanyBranch, error) {
+	rows, err := s.DB.Query(`
+        SELECT id, city, address, inn_company, open_time, close_time
+        FROM branches
+        WHERE inn_company = $1
+    `, inn)
+	if err != nil {
+		return nil, fmt.Errorf("query branches by company inn %s: %w", inn, err)
+	}
+	defer rows.Close()
+
+	var branches []*CompanyBranch
+	for rows.Next() {
+		var b CompanyBranch
+		// Сканируем напрямую – TimeOnly сам разберёт строку
+		err := rows.Scan(&b.ID, &b.City, &b.Address, &b.Inn, &b.OpenTime, &b.CloseTime)
+		if err != nil {
+			return nil, fmt.Errorf("scan branch: %w", err)
+		}
+		branches = append(branches, &b)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration: %w", err)
+	}
+	return branches, nil
 }
 
 // GetPartUserByEmail - получение партнёра по email

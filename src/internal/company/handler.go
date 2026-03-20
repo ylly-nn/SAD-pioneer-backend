@@ -137,3 +137,36 @@ func (h *Handler) CreateCompany(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(resp)
 }
+
+func (h *Handler) GetBranchesByUser(w http.ResponseWriter, r *http.Request) {
+
+	claims, ok := r.Context().Value("user").(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "unauthorized: missing user claims", http.StatusUnauthorized)
+		return
+	}
+
+	email, ok := claims["email"].(string)
+	if !ok || email == "" {
+		http.Error(w, "unauthorized: email not found in token", http.StatusUnauthorized)
+		return
+	}
+
+	branches, err := h.company.GetBranchesByEmail(email)
+	if err != nil {
+		// Если пользователь не является партнёром
+		if errors.Is(err, ErrUserNotPartner) {
+			http.Error(w, "User does not have a company", http.StatusForbidden)
+			return
+		}
+
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(branches); err != nil {
+
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
+}

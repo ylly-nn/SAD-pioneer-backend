@@ -46,6 +46,7 @@ func New(authMiddleware *middleware.AuthMiddleware, adminMiddleware *middleware.
 
 		//Защищёные маршруты
 		r.With(authMiddleware.Authenticate).Get("/", companyHandler.GetCompany)
+		r.With(authMiddleware.Authenticate).Get("/branches", companyHandler.GetBranchesByUser)
 	})
 
 	r.Route("/client", func(r chi.Router) {

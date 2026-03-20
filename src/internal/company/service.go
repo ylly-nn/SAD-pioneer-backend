@@ -88,6 +88,24 @@ func (m *CompanyManager) CreateCompany(company Company) (*Company, error) {
 	return created, nil
 }
 
+// GetBranchesByEmail - получение филлиалов компании инн которой получаем по email
+func (m *CompanyManager) GetBranchesByEmail(email string) ([]*CompanyBranch, error) {
+	userIsPartner, err := m.UserIsPartner(email)
+	if err != nil {
+		return nil, err
+	}
+	if userIsPartner.IsPartner != true {
+		return nil, ErrUserNotPartner
+	}
+
+	branches, err := m.storage.GetBranchesByInn(userIsPartner.Inn)
+
+	if err != nil {
+		return nil, err
+	}
+	return branches, nil
+}
+
 // Проверка что у пользователя есть организация
 // Если у пользователя организация есть вернётся IsParnersUsers{IsPartner: true, Inn: "строка с инн"
 // Если у пользователя организация нет вернётся IsParnersUsers{IsPartner: false, Inn: ничего

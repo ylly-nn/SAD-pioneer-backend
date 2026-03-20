@@ -1,5 +1,11 @@
 package company
 
+import (
+	"github.com/google/uuid"
+
+	"src/internal/timeparsing"
+)
+
 // Соответсвует таблице Company
 // Используется для внутренней передачи данных
 type Company struct {
@@ -34,4 +40,13 @@ type IsPartnersUsers struct {
 type PartnersUsers struct {
 	Email string
 	Inn   string
+}
+
+type CompanyBranch struct {
+	ID        uuid.UUID            `json:"branch_id"`
+	City      string               `json:"city"`
+	Address   string               `json:"address"`
+	Inn       string               `json:"inn_company"`
+	OpenTime  timeparsing.TimeOnly `json:"open_time"`
+	CloseTime timeparsing.TimeOnly `json:"close_time"`
 }
