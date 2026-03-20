@@ -7,6 +7,7 @@ import (
 
 	"src/internal/db"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -14,6 +15,7 @@ import (
 var (
 	ErrCompanyNotFound      = errors.New("company not found")
 	ErrCompanyAlreadyExists = errors.New("company already exists")
+	ErrBranchNotFound       = errors.New("branch not found")
 )
 
 // CompanyStorage определяет методы для работы с компаниями
@@ -29,6 +31,10 @@ type CompanyStorage interface {
 	Delete(inn string) error
 
 	GetBranchesByInn(inn string) ([]*CompanyBranch, error)
+
+	GetBranchByID(branchID uuid.UUID) (CompanyBranch, error)
+
+	GetServicesByBranch(branchID uuid.UUID) ([]*ServiceInBranch, error)
 }
 
 // PostgresCompanyStorage реализует CompanyStorage для PostgreSQL.
@@ -39,6 +45,55 @@ type PostgresCompanyStorage struct {
 // NewPostgresCompanyStorage создаёт новый экземпляр PostgresCompanyStorage.
 func NewPostgresCompanyStorage(sqlDB *sql.DB) *PostgresCompanyStorage {
 	return &PostgresCompanyStorage{Storage: db.NewStorage(sqlDB)}
+}
+
+func (s *PostgresCompanyStorage) GetBranchByID(branchID uuid.UUID) (CompanyBranch, error) {
+	var branch CompanyBranch
+
+	row := s.DB.QueryRow(`
+        SELECT id, city, address, inn_company, open_time, close_time
+        FROM branches
+        WHERE id = $1
+    `, branchID)
+
+	err := row.Scan(&branch.ID, &branch.City, &branch.Address, &branch.Inn, &branch.OpenTime, &branch.CloseTime)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return CompanyBranch{}, ErrBranchNotFound
+		}
+		return CompanyBranch{}, fmt.Errorf("scan branch: %w", err)
+	}
+
+	return branch, nil
+}
+
+func (s *PostgresCompanyStorage) GetServicesByBranch(branchID uuid.UUID) ([]*ServiceInBranch, error) {
+	rows, err := s.DB.Query(`
+        SELECT 
+            bs.id AS branch_service_id, 
+            s.id AS service_id, 
+            s.name AS service_name
+        FROM branch_services bs
+        JOIN services s ON s.id = bs.service
+        WHERE bs.branch = $1
+    `, branchID)
+	if err != nil {
+		return nil, fmt.Errorf("query services by branch %v: %w", branchID, err)
+	}
+	defer rows.Close()
+
+	var services []*ServiceInBranch
+	for rows.Next() {
+		var serv ServiceInBranch
+		if err := rows.Scan(&serv.BranchServId, &serv.ServiceId, &serv.ServiceName); err != nil {
+			return nil, fmt.Errorf("scan service: %w", err)
+		}
+		services = append(services, &serv)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration: %w", err)
+	}
+	return services, nil
 }
 
 // GetBrancesByCompany получение филиалов по инн компании

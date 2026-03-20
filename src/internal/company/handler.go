@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 // Handler обрабатывает HTTP-запросы для компаний
@@ -168,5 +169,59 @@ func (h *Handler) GetBranchesByUser(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(branches); err != nil {
 
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
+}
+
+func (h *Handler) GetBrancesByIdUser(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value("user").(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "unauthorized: missing user claims", http.StatusUnauthorized)
+		return
+	}
+
+	email, ok := claims["email"].(string)
+	if !ok || email == "" {
+		http.Error(w, "unauthorized: email not found in token", http.StatusUnauthorized)
+		return
+	}
+
+	idParam := chi.URLParam(r, "branch_id")
+	if idParam == "" {
+		http.Error(w, "missing branch id", http.StatusBadRequest)
+		return
+	}
+
+	// Парсим UUID и проверяем формат
+	branchID, err := uuid.Parse(idParam)
+	if err != nil {
+		http.Error(w, "invalid branch id format: must be UUID", http.StatusBadRequest)
+		return
+	}
+
+	branch, err := h.company.GetBranchByIdEmail(branchID, email)
+	if err != nil {
+		if errors.Is(err, ErrUserNotPartner) {
+			http.Error(w, "User does not have a company", http.StatusForbidden)
+			return
+		}
+		if errors.Is(err, ErrBranchNotInCompany) {
+			http.Error(w, "User does not have access to the branch", http.StatusForbidden)
+			return
+		}
+		if errors.Is(err, ErrBranchNotFound) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(nil) // тело ответа: null
+			return
+		}
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(branch); err != nil {
+		// Если сериализация не удалась – ошибка сервера
+		http.Error(w, "failed to encode response", http.StatusInternalServerError)
+		return
 	}
 }

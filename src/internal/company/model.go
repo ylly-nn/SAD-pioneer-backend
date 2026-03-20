@@ -42,6 +42,7 @@ type PartnersUsers struct {
 	Inn   string
 }
 
+// Соответсвует таблице branches, используется в get /company/branches
 type CompanyBranch struct {
 	ID        uuid.UUID            `json:"branch_id"`
 	City      string               `json:"city"`
@@ -49,4 +50,18 @@ type CompanyBranch struct {
 	Inn       string               `json:"inn_company"`
 	OpenTime  timeparsing.TimeOnly `json:"open_time"`
 	CloseTime timeparsing.TimeOnly `json:"close_time"`
+}
+
+type CompanyBranchWithServ struct {
+	City      string               `json:"city"`
+	Address   string               `json:"address"`
+	OpenTime  timeparsing.TimeOnly `json:"open_time"`
+	СloseTime timeparsing.TimeOnly `json:"close_time"`
+	Services  []*ServiceInBranch   `json:"services"`
+}
+
+type ServiceInBranch struct {
+	BranchServId uuid.UUID `json:"branch_serv_id"`
+	ServiceId    uuid.UUID `json:"service_id"`
+	ServiceName  string    `json:"service_name"`
 }

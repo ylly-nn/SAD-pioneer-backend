@@ -3,10 +3,13 @@ package company
 import (
 	"errors"
 	"fmt"
+
+	"github.com/google/uuid"
 )
 
 var (
-	ErrUserNotPartner = errors.New("the user does not have a company")
+	ErrUserNotPartner     = errors.New("the user does not have a company")
+	ErrBranchNotInCompany = errors.New("no access to the company that owns the branch")
 )
 
 // CompanyManager содержит бизнес-логику для работы с компаниями.
@@ -104,6 +107,43 @@ func (m *CompanyManager) GetBranchesByEmail(email string) ([]*CompanyBranch, err
 		return nil, err
 	}
 	return branches, nil
+}
+
+// получение филиала компании по id и email пользователя принадлежащего компании
+func (m *CompanyManager) GetBranchByIdEmail(branch_id uuid.UUID, email string) (CompanyBranchWithServ, error) {
+
+	isPartner, err := m.UserIsPartner(email)
+	if isPartner.IsPartner != true {
+		return CompanyBranchWithServ{}, ErrUserNotPartner
+	}
+
+	branch, err := m.storage.GetBranchByID(branch_id)
+	if errors.Is(err, ErrBranchNotFound) {
+		return CompanyBranchWithServ{}, ErrBranchNotInCompany
+	}
+
+	if err != nil {
+		return CompanyBranchWithServ{}, err
+	}
+
+	if branch.Inn != isPartner.Inn {
+		return CompanyBranchWithServ{}, ErrBranchNotInCompany
+	}
+
+	serv, err := m.storage.GetServicesByBranch(branch_id)
+	if err != nil {
+		return CompanyBranchWithServ{}, err
+	}
+
+	var bws CompanyBranchWithServ
+
+	bws.City = branch.City
+	bws.Address = branch.Address
+	bws.OpenTime = branch.OpenTime
+	bws.OpenTime = branch.CloseTime
+	bws.Services = serv
+
+	return bws, nil
 }
 
 // Проверка что у пользователя есть организация
