@@ -1,6 +1,8 @@
 package company
 
 import (
+	"encoding/json"
+
 	"github.com/google/uuid"
 
 	"src/internal/timeparsing"
@@ -52,6 +54,7 @@ type CompanyBranch struct {
 	CloseTime timeparsing.TimeOnly `json:"close_time"`
 }
 
+// Филиал с соответсвуюими ему услугами
 type CompanyBranchWithServ struct {
 	City      string               `json:"city"`
 	Address   string               `json:"address"`
@@ -60,8 +63,23 @@ type CompanyBranchWithServ struct {
 	Services  []*ServiceInBranch   `json:"services"`
 }
 
+// Cтрутура описывающая услугу для CompanyBranchWithServ struct
 type ServiceInBranch struct {
 	BranchServId uuid.UUID `json:"branch_serv_id"`
 	ServiceId    uuid.UUID `json:"service_id"`
 	ServiceName  string    `json:"service_name"`
+}
+
+// Струтура для ответа на Get /company/branch/service/{branchserID}
+type CompanyServDetailsResponse struct {
+	Detail   string `json:"detail"`
+	Duration int    `json:"duration_min"`
+}
+
+// соответствует таблице branch_serv
+type BranchServ struct {
+	ID             uuid.UUID       `json:"id"`
+	Branch         uuid.UUID       `json:"branch"`
+	Service        uuid.UUID       `json:"service"`
+	ServiceDetails json.RawMessage `json:"service_detalis"`
 }

@@ -1,15 +1,20 @@
 package company
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/google/uuid"
 )
 
 var (
-	ErrUserNotPartner     = errors.New("the user does not have a company")
-	ErrBranchNotInCompany = errors.New("no access to the company that owns the branch")
+	ErrUserNotPartner         = errors.New("the user does not have a company")
+	ErrBranchNotInCompany     = errors.New("no access to the company that owns the branch")
+	ErrBranchServNotAvailable = errors.New("service in the branch not available to the user")
+	ErrBranchServIsNull       = errors.New("details for service in the branch not found")
+	ErrServiceDetailsInvalid  = errors.New("invalid service details format")
 )
 
 // CompanyManager содержит бизнес-логику для работы с компаниями.
@@ -144,6 +149,62 @@ func (m *CompanyManager) GetBranchByIdEmail(branch_id uuid.UUID, email string) (
 	bws.Services = serv
 
 	return bws, nil
+}
+
+// Получение деталей ууслуги определёного филиала
+// Возвращаемые ошибки:  ErrUserNotPartner, ErrBranchesNotFound
+// ErrBranchServNotFound, ErrBranchServNotAvailable
+// ErrBranchServNotAvailable, ErrServiceDetailsInvalid
+func (m *CompanyManager) GetServDetailsByBranchServId(branchServID uuid.UUID, email string) ([]*CompanyServDetailsResponse, error) {
+	isPartner, err := m.UserIsPartner(email)
+	if err != nil {
+		return []*CompanyServDetailsResponse{}, err
+	}
+	if isPartner.IsPartner != true {
+		return []*CompanyServDetailsResponse{}, ErrUserNotPartner
+	}
+
+	branchServ, err := m.storage.GetBranchServByID(branchServID)
+	if err != nil {
+		return []*CompanyServDetailsResponse{}, err
+	}
+
+	companyBranch, err := m.storage.GetBranchesByInn(isPartner.Inn)
+	if err != nil {
+		return []*CompanyServDetailsResponse{}, err
+	}
+
+	//создание массива из id филиалов компании
+	var branchIDs []uuid.UUID
+	for _, branch := range companyBranch {
+		branchIDs = append(branchIDs, branch.ID)
+	}
+
+	//проверка есть ли в списке id филиалов id филиала в branchServ
+	found := slices.Contains(branchIDs, branchServ.Branch)
+
+	if !found {
+		return []*CompanyServDetailsResponse{}, ErrBranchServNotAvailable
+	}
+
+	if len(branchServ.ServiceDetails) == 0 || string(branchServ.ServiceDetails) == "null" {
+		return []*CompanyServDetailsResponse{}, ErrBranchServIsNull
+	}
+
+	var detailsMap map[string]int
+	if err := json.Unmarshal(branchServ.ServiceDetails, &detailsMap); err != nil {
+		return nil, ErrServiceDetailsInvalid
+	}
+
+	var result []*CompanyServDetailsResponse
+	for detail, duration := range detailsMap {
+		result = append(result, &CompanyServDetailsResponse{
+			Detail:   detail,
+			Duration: duration,
+		})
+	}
+	return result, nil
+
 }
 
 // Проверка что у пользователя есть организация

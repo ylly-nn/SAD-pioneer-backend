@@ -139,6 +139,7 @@ func (h *Handler) CreateCompany(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
+// Обрабатывает Get /company/branches
 func (h *Handler) GetBranchesByUser(w http.ResponseWriter, r *http.Request) {
 
 	claims, ok := r.Context().Value("user").(jwt.MapClaims)
@@ -160,6 +161,12 @@ func (h *Handler) GetBranchesByUser(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "User does not have a company", http.StatusForbidden)
 			return
 		}
+		if errors.Is(err, ErrBranchesNotFound) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(nil) // тело ответа: null
+			return
+		}
 
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -172,6 +179,7 @@ func (h *Handler) GetBranchesByUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Обрабатывает Get /company/branches/{branch_id}
 func (h *Handler) GetBrancesByIdUser(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value("user").(jwt.MapClaims)
 	if !ok {
@@ -221,6 +229,66 @@ func (h *Handler) GetBrancesByIdUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(branch); err != nil {
 		// Если сериализация не удалась – ошибка сервера
+		http.Error(w, "failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}
+
+// обрабатывает get /company/branch/service
+func (h *Handler) GetServDetailsByBranchServId(w http.ResponseWriter, r *http.Request) {
+
+	claims, ok := r.Context().Value("user").(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "unauthorized: missing user claims", http.StatusUnauthorized)
+		return
+	}
+
+	email, ok := claims["email"].(string)
+	if !ok || email == "" {
+		http.Error(w, "unauthorized: email not found in token", http.StatusUnauthorized)
+		return
+	}
+	// Извлекаем branchServID из пути
+	branchServIDStr := chi.URLParam(r, "branchServID")
+	branchServID, err := uuid.Parse(branchServIDStr)
+	if err != nil {
+		http.Error(w, "invalid branch service ID", http.StatusBadRequest)
+		return
+	}
+
+	// Вызываем бизнес-логику
+	details, err := h.company.GetServDetailsByBranchServId(branchServID, email)
+	if err != nil {
+		// Обработка известных ошибок
+		switch {
+		case errors.Is(err, ErrUserNotPartner):
+			http.Error(w, "user is not a partner", http.StatusForbidden)
+		case errors.Is(err, ErrBranchesNotFound):
+			http.Error(w, "branch service not available", http.StatusForbidden)
+		case errors.Is(err, ErrBranchServNotFound):
+			http.Error(w, "branch service not available", http.StatusForbidden)
+		case errors.Is(err, ErrBranchServNotAvailable):
+			http.Error(w, "branch service not available", http.StatusForbidden)
+		case errors.Is(err, ErrBranchServIsNull):
+			{
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				json.NewEncoder(w).Encode(nil) // тело ответа: null
+				return
+			}
+		case errors.Is(err, ErrServiceDetailsInvalid):
+			// Ошибка формата JSON (может быть как 400, так и 500, выбираем 400)
+			http.Error(w, "invalid service details format", http.StatusBadRequest)
+		default:
+			// Неизвестная ошибка (БД, сеть и т.д.)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Успешный ответ
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(details); err != nil {
 		http.Error(w, "failed to encode response", http.StatusInternalServerError)
 		return
 	}

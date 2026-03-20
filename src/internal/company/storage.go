@@ -2,6 +2,7 @@ package company
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -16,6 +17,8 @@ var (
 	ErrCompanyNotFound      = errors.New("company not found")
 	ErrCompanyAlreadyExists = errors.New("company already exists")
 	ErrBranchNotFound       = errors.New("branch not found")
+	ErrBranchesNotFound     = errors.New("company has no branches")
+	ErrBranchServNotFound   = errors.New("service by branch not found")
 )
 
 // CompanyStorage определяет методы для работы с компаниями
@@ -35,6 +38,8 @@ type CompanyStorage interface {
 	GetBranchByID(branchID uuid.UUID) (CompanyBranch, error)
 
 	GetServicesByBranch(branchID uuid.UUID) ([]*ServiceInBranch, error)
+
+	GetBranchServByID(branchServID uuid.UUID) (BranchServ, error)
 }
 
 // PostgresCompanyStorage реализует CompanyStorage для PostgreSQL.
@@ -47,6 +52,31 @@ func NewPostgresCompanyStorage(sqlDB *sql.DB) *PostgresCompanyStorage {
 	return &PostgresCompanyStorage{Storage: db.NewStorage(sqlDB)}
 }
 
+// Получение из бд branch_serv по id если нет, ошибка - ErrBranchServNotFound
+func (s *PostgresCompanyStorage) GetBranchServByID(branchServID uuid.UUID) (BranchServ, error) {
+	var bs BranchServ
+	var details []byte
+
+	row := s.DB.QueryRow(`
+        SELECT id, branch, service, service_detalis
+        FROM branch_services
+        WHERE id = $1
+    `, branchServID)
+
+	err := row.Scan(&bs.ID, &bs.Branch, &bs.Service, &details)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return BranchServ{}, ErrBranchServNotFound
+		}
+		return BranchServ{}, err
+	}
+
+	bs.ServiceDetails = json.RawMessage(details)
+	return bs, nil
+}
+
+// Получение из бд филиала по его id
+// Если не найдено ErrBranchNotFound
 func (s *PostgresCompanyStorage) GetBranchByID(branchID uuid.UUID) (CompanyBranch, error) {
 	var branch CompanyBranch
 
@@ -67,6 +97,7 @@ func (s *PostgresCompanyStorage) GetBranchByID(branchID uuid.UUID) (CompanyBranc
 	return branch, nil
 }
 
+// Получение сиска услуг определённого филиала
 func (s *PostgresCompanyStorage) GetServicesByBranch(branchID uuid.UUID) ([]*ServiceInBranch, error) {
 	rows, err := s.DB.Query(`
         SELECT 
@@ -121,6 +152,9 @@ func (s *PostgresCompanyStorage) GetBranchesByInn(inn string) ([]*CompanyBranch,
 	}
 	if err = rows.Err(); err != nil {
 		return nil, fmt.Errorf("rows iteration: %w", err)
+	}
+	if len(branches) == 0 {
+		return nil, ErrBranchesNotFound
 	}
 	return branches, nil
 }
