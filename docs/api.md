@@ -622,13 +622,13 @@ body:
 }
 ~~~
 ---
-### GET /partner/request/{inn}
+### GET /partner/request
 Получение информации по заявке
 
 Header: Authorization: Bearer <токен>
 
 ~~~
-GET /partner/request/234567890123
+GET /partner/request
 ~~~
 
 Пример успешного ответа
