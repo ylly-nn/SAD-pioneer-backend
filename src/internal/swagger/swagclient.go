@@ -10,7 +10,7 @@ import (
 // GetClientOrders возвращает список заказов...
 // @Summary      Получить заказы клиента
 // @Description  Возвращает все заказы, принадлежащие авторизованному клиенту.
-// @Tags         clients
+// @Tags         client
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {array}  order.ClientOrderResponse

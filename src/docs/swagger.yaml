@@ -1,5 +1,68 @@
 basePath: /
 definitions:
+  auth.LoginRequest:
+    properties:
+      email:
+        example: example@gmail.com
+        type: string
+      password:
+        example: 1A_password
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  auth.RefreshRequest:
+    properties:
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    required:
+    - refresh_token
+    type: object
+  auth.RegisterRequest:
+    properties:
+      email:
+        example: example@gmail.com
+        maxLength: 64
+        minLength: 6
+        type: string
+      password:
+        example: 1A_password
+        maxLength: 24
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  auth.TokenResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      expires_in:
+        example: 900
+        type: integer
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      token_type:
+        example: Bearer
+        type: string
+    type: object
+  auth.VerifyCodeRequest:
+    properties:
+      code:
+        example: "000000"
+        type: string
+      email:
+        example: example@gmail.com
+        type: string
+    required:
+    - code
+    - email
+    type: object
   branch.BrancByCityServ:
     properties:
       address:
@@ -124,11 +187,228 @@ definitions:
         example: Aвтомойка
         type: string
     type: object
+  swagger.LogoutRequest:
+    properties:
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  swagger.LogoutResponse:
+    properties:
+      message:
+        example: Successfully logged out
+        type: string
+    type: object
+  swagger.RegisterResponse:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      message:
+        example: Verification code sent to email
+        type: string
+    type: object
+  swagger.TokenResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIs...
+        type: string
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIs...
+        type: string
+    type: object
+  swagger.VerifyCodeResponse:
+    properties:
+      message:
+        example: User successfully registered
+        type: string
+    type: object
 info:
   contact: {}
   description: API для сервиса  Pioneer.
   title: Pioneer API
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Аутентифицирует пользователя по email и паролю, возвращает access
+        и refresh токены
+      parameters:
+      - description: Учётные данные пользователя
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Токены доступа и обновления
+          schema:
+            $ref: '#/definitions/swagger.TokenResponse'
+        "400":
+          description: Invalid request body or missing email/password
+          schema:
+            type: string
+        "401":
+          description: Invalid credentials
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Вход пользователя
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Инвалидирует refresh token, завершая сессию пользователя.
+      parameters:
+      - description: Refresh токен
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/swagger.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный выход
+          schema:
+            $ref: '#/definitions/swagger.LogoutResponse'
+        "400":
+          description: Invalid request body or refresh token is required
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Выход пользователя
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Принимает refresh токен и выдаёт новую пару access/refresh токенов.
+      parameters:
+      - description: Refresh токен
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Новые токены
+          schema:
+            $ref: '#/definitions/auth.TokenResponse'
+        "400":
+          description: Invalid request body or missing refresh token
+          schema:
+            type: string
+        "401":
+          description: Invalid or expired refresh token
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Обновление токенов доступа
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Создаёт нового пользователя и отправляет код подтверждения на email
+      parameters:
+      - description: Данные для регистрации
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Сообщение об отправке кода и email пользователя
+          schema:
+            $ref: '#/definitions/swagger.RegisterResponse'
+        "400":
+          description: Invalid request body, missing fields, or validation error
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+        "409":
+          description: user already exists
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Регистрация нового пользователя
+      tags:
+      - auth
+  /auth/verify:
+    post:
+      consumes:
+      - application/json
+      description: Проверяет код подтверждения, отправленный на email, и завершает
+        регистрацию пользователя
+      parameters:
+      - description: Email и код подтверждения
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.VerifyCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Сообщение об успешной регистрации
+          schema:
+            $ref: '#/definitions/swagger.VerifyCodeResponse'
+        "400":
+          description: Invalid request body, missing email/code, invalid code, or
+            code expired
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Подтверждение регистрации по коду
+      tags:
+      - auth
   /branch:
     get:
       description: Получить филиал для определённого города с определённым сервисом
@@ -308,7 +588,7 @@ paths:
       - BearerAuth: []
       summary: Получить заказы клиента
       tags:
-      - clients
+      - client
   /order:
     post:
       consumes:
