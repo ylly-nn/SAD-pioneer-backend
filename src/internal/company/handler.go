@@ -65,7 +65,7 @@ func (h *Handler) DeleteCompany(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// GetCompany обрабатывает GET /companies/{inn}.
+// GetCompany обрабатывает GET /company.
 func (h *Handler) GetCompany(w http.ResponseWriter, r *http.Request) {
 
 	claims, ok := r.Context().Value("user").(jwt.MapClaims)
@@ -234,7 +234,7 @@ func (h *Handler) GetBrancesByIdUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// обрабатывает get /company/branch/service
+// обрабатывает get /company/branch/service/{branch_serv_id}
 func (h *Handler) GetServDetailsByBranchServId(w http.ResponseWriter, r *http.Request) {
 
 	claims, ok := r.Context().Value("user").(jwt.MapClaims)

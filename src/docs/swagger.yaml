@@ -101,6 +101,89 @@ definitions:
         example: мОсква
         type: string
     type: object
+  company.CompanyBranch:
+    properties:
+      address:
+        example: ул. Тверская, 1
+        type: string
+      branch_id:
+        example: 9eebb3b9-5b35-4007-9d4f-2f4141786b45
+        type: string
+      city:
+        example: Москва
+        type: string
+      close_time:
+        example: 18:00:00+00:00
+        format: hh:mm:ss+hh:mm
+        type: string
+      inn_company:
+        example: "123456789012"
+        type: string
+      open_time:
+        example: 10:00:00+00:00
+        format: hh:mm:ss+hh:mm
+        type: string
+    type: object
+  company.CompanyBranchWithServ:
+    properties:
+      address:
+        example: Невский пр., 10
+        type: string
+      city:
+        example: Санкт-Петербург
+        type: string
+      close_time:
+        example: 18:00:00+00:00
+        format: hh:mm:ss+hh:mm
+        type: string
+      open_time:
+        example: 10:00:00+00:00
+        format: hh:mm:ss+hh:mm
+        type: string
+      services:
+        items:
+          $ref: '#/definitions/company.ServiceInBranch'
+        type: array
+    type: object
+  company.CompanyResponse:
+    properties:
+      inn:
+        example: "234567890123"
+        type: string
+      kpp:
+        example: "234567891"
+        type: string
+      ogrn:
+        example: "2345678901234"
+        type: string
+      org_name:
+        example: АО Технопром
+        type: string
+      org_short_name:
+        example: Технопром
+        type: string
+    type: object
+  company.CompanyServDetailsResponse:
+    properties:
+      detail:
+        example: Мойка салона
+        type: string
+      duration_min:
+        example: 40
+        type: integer
+    type: object
+  company.ServiceInBranch:
+    properties:
+      branch_serv_id:
+        example: 6fdd2352-ffc4-4140-b54c-67657f841c1c
+        type: string
+      service_id:
+        example: 03db1f58-2bbd-481c-8d93-b2828871b376
+        type: string
+      service_name:
+        example: мойка
+        type: string
+    type: object
   order.ClientOrderResponse:
     properties:
       address:
@@ -589,6 +672,155 @@ paths:
       summary: Получить заказы клиента
       tags:
       - client
+  /company:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает данные компании для авторизованного пользователя (только
+        для партнёров).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Данные компании
+          schema:
+            $ref: '#/definitions/company.CompanyResponse'
+        "401":
+          description: 'Unauthorized: missing or invalid token'
+          schema:
+            type: string
+        "403":
+          description: User does not have a company
+          schema:
+            type: string
+        "404":
+          description: Company not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить компанию пользователя
+      tags:
+      - company
+  /company/branch/service/{branchServID}:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает описание и длительность услуги, связанной с указанным
+        идентификатором услуги филиала (branch_serv_id).
+      parameters:
+      - description: UUID записи услуги филиала
+        example: 6fdd2352-ffc4-4140-b54c-67657f841c1c
+        in: path
+        name: branchServID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Детали услуги (если данные отсутствуют, возвращается null)
+          schema:
+            $ref: '#/definitions/company.CompanyServDetailsResponse'
+        "400":
+          description: invalid branch service ID или invalid service details format
+          schema:
+            type: string
+        "401":
+          description: 'unauthorized: missing user claims или email not found in token'
+          schema:
+            type: string
+        "403":
+          description: user is not a partner или branch service not available
+          schema:
+            type: string
+        "500":
+          description: internal server error или failed to encode response
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить детали услуги филиала
+      tags:
+      - company
+  /company/branches:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список филиалов компании, к которой привязан авторизованный
+        пользователь (только для партнёров).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список филиалов (если нет филиалов, возвращается null)
+          schema:
+            items:
+              $ref: '#/definitions/company.CompanyBranch'
+            type: array
+        "401":
+          description: 'Unauthorized: missing or invalid token'
+          schema:
+            type: string
+        "403":
+          description: User does not have a company
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить филиалы компании
+      tags:
+      - company
+  /company/branches/{branch_id}:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает детальную информацию о филиале компании текущего пользователя,
+        включая список услуг.
+      parameters:
+      - description: UUID филиала
+        example: 9eebb3b9-5b35-4007-9d4f-2f4141786b45
+        in: path
+        name: branch_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Филиал с услугами (если не найден, возвращается null)
+          schema:
+            $ref: '#/definitions/company.CompanyBranchWithServ'
+        "400":
+          description: 'missing branch id или invalid branch id format: must be UUID'
+          schema:
+            type: string
+        "401":
+          description: 'unauthorized: missing user claims или email not found in token'
+          schema:
+            type: string
+        "403":
+          description: User does not have a company или User does not have access
+            to the branch
+          schema:
+            type: string
+        "500":
+          description: internal server error или failed to encode response
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить филиал компании по ID
+      tags:
+      - company
   /order:
     post:
       consumes:

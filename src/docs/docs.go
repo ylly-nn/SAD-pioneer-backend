@@ -567,6 +567,231 @@ const docTemplate = `{
                 }
             }
         },
+        "/company": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает данные компании для авторизованного пользователя (только для партнёров).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "company"
+                ],
+                "summary": "Получить компанию пользователя",
+                "responses": {
+                    "200": {
+                        "description": "Данные компании",
+                        "schema": {
+                            "$ref": "#/definitions/company.CompanyResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized: missing or invalid token",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "User does not have a company",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Company not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/company/branch/service/{branchServID}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает описание и длительность услуги, связанной с указанным идентификатором услуги филиала (branch_serv_id).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "company"
+                ],
+                "summary": "Получить детали услуги филиала",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "6fdd2352-ffc4-4140-b54c-67657f841c1c",
+                        "description": "UUID записи услуги филиала",
+                        "name": "branchServID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Детали услуги (если данные отсутствуют, возвращается null)",
+                        "schema": {
+                            "$ref": "#/definitions/company.CompanyServDetailsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid branch service ID или invalid service details format",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized: missing user claims или email not found in token",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "user is not a partner или branch service not available",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error или failed to encode response",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/company/branches": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает список филиалов компании, к которой привязан авторизованный пользователь (только для партнёров).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "company"
+                ],
+                "summary": "Получить филиалы компании",
+                "responses": {
+                    "200": {
+                        "description": "Список филиалов (если нет филиалов, возвращается null)",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/company.CompanyBranch"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized: missing or invalid token",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "User does not have a company",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/company/branches/{branch_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает детальную информацию о филиале компании текущего пользователя, включая список услуг.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "company"
+                ],
+                "summary": "Получить филиал компании по ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "9eebb3b9-5b35-4007-9d4f-2f4141786b45",
+                        "description": "UUID филиала",
+                        "name": "branch_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Филиал с услугами (если не найден, возвращается null)",
+                        "schema": {
+                            "$ref": "#/definitions/company.CompanyBranchWithServ"
+                        }
+                    },
+                    "400": {
+                        "description": "missing branch id или invalid branch id format: must be UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized: missing user claims или email not found in token",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "User does not have a company или User does not have access to the branch",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error или failed to encode response",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/order": {
             "post": {
                 "security": [
@@ -805,6 +1030,121 @@ const docTemplate = `{
                 "city": {
                     "type": "string",
                     "example": "мОсква"
+                }
+            }
+        },
+        "company.CompanyBranch": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "example": "ул. Тверская, 1"
+                },
+                "branch_id": {
+                    "type": "string",
+                    "example": "9eebb3b9-5b35-4007-9d4f-2f4141786b45"
+                },
+                "city": {
+                    "type": "string",
+                    "example": "Москва"
+                },
+                "close_time": {
+                    "type": "string",
+                    "format": "hh:mm:ss+hh:mm",
+                    "example": "18:00:00+00:00"
+                },
+                "inn_company": {
+                    "type": "string",
+                    "example": "123456789012"
+                },
+                "open_time": {
+                    "type": "string",
+                    "format": "hh:mm:ss+hh:mm",
+                    "example": "10:00:00+00:00"
+                }
+            }
+        },
+        "company.CompanyBranchWithServ": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "example": "Невский пр., 10"
+                },
+                "city": {
+                    "type": "string",
+                    "example": "Санкт-Петербург"
+                },
+                "close_time": {
+                    "type": "string",
+                    "format": "hh:mm:ss+hh:mm",
+                    "example": "18:00:00+00:00"
+                },
+                "open_time": {
+                    "type": "string",
+                    "format": "hh:mm:ss+hh:mm",
+                    "example": "10:00:00+00:00"
+                },
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/company.ServiceInBranch"
+                    }
+                }
+            }
+        },
+        "company.CompanyResponse": {
+            "type": "object",
+            "properties": {
+                "inn": {
+                    "type": "string",
+                    "example": "234567890123"
+                },
+                "kpp": {
+                    "type": "string",
+                    "example": "234567891"
+                },
+                "ogrn": {
+                    "type": "string",
+                    "example": "2345678901234"
+                },
+                "org_name": {
+                    "type": "string",
+                    "example": "АО Технопром"
+                },
+                "org_short_name": {
+                    "type": "string",
+                    "example": "Технопром"
+                }
+            }
+        },
+        "company.CompanyServDetailsResponse": {
+            "type": "object",
+            "properties": {
+                "detail": {
+                    "type": "string",
+                    "example": "Мойка салона"
+                },
+                "duration_min": {
+                    "type": "integer",
+                    "example": 40
+                }
+            }
+        },
+        "company.ServiceInBranch": {
+            "type": "object",
+            "properties": {
+                "branch_serv_id": {
+                    "type": "string",
+                    "example": "6fdd2352-ffc4-4140-b54c-67657f841c1c"
+                },
+                "service_id": {
+                    "type": "string",
+                    "example": "03db1f58-2bbd-481c-8d93-b2828871b376"
+                },
+                "service_name": {
+                    "type": "string",
+                    "example": "мойка"
                 }
             }
         },
