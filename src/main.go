@@ -18,6 +18,7 @@ import (
 	"src/internal/db"
 	"src/internal/middleware"
 	"src/internal/order"
+	"src/internal/partners"
 	"src/internal/router"
 	"src/internal/service"
 )
@@ -89,6 +90,7 @@ func main() {
 	authService := auth.NewAuthManager(userStorage, refreshTokenStorage, verificationStorage, tsUserStorage, emailService, authConfig)
 	authHandler := auth.NewHandler(authService)
 
+	// Запуск обработчиков из пакета admin
 	adminStorage := admin.NewPostgresAdminStorage(database)
 	partnerRequestStorage := admin.NewPostgresPartnerRequestStorage(database)
 	companyStorageFromAdmin := admin.NewPostgresCompanyStorage(database)
@@ -97,10 +99,17 @@ func main() {
 	adminManager := admin.NewAdminManager(userStorage, partnerRequestStorage, companyStorageFromAdmin, partnersUsersStorage, adminStorage, emailService, admin.Config(authConfig))
 	adminHandler := admin.NewHandler(adminManager)
 
+	// Запуск обработчиков из пакета /partners
+	partnerRequestStorageFromPartners := partners.NewPostgresPartnerRequestStorage(database)
+	companyStorageFromPartners := partners.NewPostgresCompanyStorage(database)
+
+	partnersManager := partners.NewPartnersManager(userStorage, partnerRequestStorageFromPartners, companyStorageFromPartners, emailService, partners.Config(authConfig))
+	partnersHandler := partners.NewHandler(partnersManager)
+
 	authMiddleware := middleware.NewAuthMiddleware(jwt.SecretKey)
 	adminMiddleware := middleware.NewAdminMiddleware(adminManager)
 	//Пути - src/internal/router/router.go
-	router := router.New(authMiddleware, adminMiddleware, serviceHandler, companyHandler, clientHandler, orderHandler, branchHandler, authHandler, adminHandler)
+	router := router.New(authMiddleware, adminMiddleware, serviceHandler, companyHandler, clientHandler, orderHandler, branchHandler, authHandler, adminHandler, partnersHandler)
 
 	// Запуск сервера
 	log.Printf("Сервер запущен на http://localhost:%s", port)

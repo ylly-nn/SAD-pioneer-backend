@@ -14,10 +14,11 @@ import (
 	"src/internal/company"
 	"src/internal/middleware"
 	"src/internal/order"
+	"src/internal/partners"
 	"src/internal/service"
 )
 
-func New(authMiddleware *middleware.AuthMiddleware, adminMiddleware *middleware.AdminMiddleware, serviceHandler *service.Handler, companyHandler *company.Handler, clientHandler *client.Handler, orderHandler *order.Handler, branchHandler *branch.Handler, authHandler *auth.Handler, adminHandler *admin.Handler) http.Handler {
+func New(authMiddleware *middleware.AuthMiddleware, adminMiddleware *middleware.AdminMiddleware, serviceHandler *service.Handler, companyHandler *company.Handler, clientHandler *client.Handler, orderHandler *order.Handler, branchHandler *branch.Handler, authHandler *auth.Handler, adminHandler *admin.Handler, partnersHandler *partners.Handler) http.Handler {
 	r := chi.NewRouter()
 
 	// Глобальные middleware для всех запросов
@@ -87,8 +88,8 @@ func New(authMiddleware *middleware.AuthMiddleware, adminMiddleware *middleware.
 	r.Route("/partner", func(r chi.Router) {
 		// Защищенные маршруты
 		r.Use(authMiddleware.Authenticate)
-		r.Post("/request", adminHandler.CreatePartnerRequest)
-		r.Get("/request/{inn}", adminHandler.GetRequestStatus)
+		r.Post("/request", partnersHandler.CreatePartnerRequest)
+		r.Get("/request", partnersHandler.GetRequestStatus)
 	})
 
 	r.Route("/admin", func(r chi.Router) {
