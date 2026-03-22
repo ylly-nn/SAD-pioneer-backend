@@ -19,12 +19,14 @@ var (
 
 // CompanyManager содержит бизнес-логику для работы с компаниями.
 type CompanyManager struct {
-	storage CompanyStorage
+	storage     CompanyStorage
+	userStorage UserStorage
 }
 
 // NewCompanyManager создаёт новый экземпляр CompanyManager.
-func NewCompanyManager(storage CompanyStorage) *CompanyManager {
-	return &CompanyManager{storage: storage}
+func NewCompanyManager(storage CompanyStorage, userStorage UserStorage) *CompanyManager {
+	return &CompanyManager{storage: storage,
+		userStorage: userStorage}
 }
 
 // GetAllCompanies - возвращает список всех компаний
@@ -224,4 +226,55 @@ func (m *CompanyManager) UserIsPartner(email string) (IsPartnersUsers, error) {
 		IsPartner: true,
 		Inn:       partUser.Inn,
 	}, nil
+}
+
+// AddUserToCompany добавляет нового пользователя в компанию
+func (m *CompanyManager) AddUserToCompany(userEmail, newUserEmail string) error {
+	// Проверка, что добавляющий пользователь есть в компании
+	userIsPartner, err := m.UserIsPartner(userEmail)
+	if err != nil {
+		return fmt.Errorf("failed to check user email: %w", err)
+	}
+	if !userIsPartner.IsPartner {
+		return ErrUserNotPartner
+	}
+
+	inn := userIsPartner.Inn
+
+	// Проверка, что компания с ИНН существует и пользователь находится в компании
+	if userIsPartner.Inn != inn {
+		return errors.New("user does not have access to this company")
+	}
+
+	company, err := m.storage.GetCompanyByInn(inn)
+	if err != nil {
+		return ErrCompanyNotFound
+	}
+	if company == nil {
+		return ErrCompanyNotFound
+	}
+
+	// Проверка, существует ли новый пользователь в системе
+	user, err := m.userStorage.GetByEmail(newUserEmail)
+	if err != nil {
+		return fmt.Errorf("failed to check user: %w", err)
+	}
+	if user == nil {
+		return errors.New("user not found")
+	}
+
+	// Проверка, есть ли пользователь в компании
+	existingPartner, err := m.storage.GetPartUserByEmail(newUserEmail)
+	if err != nil {
+		return fmt.Errorf("failed to check if user is already partner: %w", err)
+	}
+	if existingPartner.Email != "" {
+		return errors.New("user is already a partner")
+	}
+
+	if err := m.storage.AddUserToPartners(newUserEmail, inn); err != nil {
+		return fmt.Errorf("failed to add user to partners: %w", err)
+	}
+
+	return nil
 }

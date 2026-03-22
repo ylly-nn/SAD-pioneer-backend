@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"src/internal/auth"
 	"src/internal/db"
 
 	"github.com/google/uuid"
@@ -20,6 +21,18 @@ var (
 	ErrBranchesNotFound     = errors.New("company has no branches")
 	ErrBranchServNotFound   = errors.New("service by branch not found")
 )
+
+// UserStorage интерфейс для проверки существования пользователя
+type UserStorage interface {
+	GetByEmail(email string) (*auth.User, error)
+	Create(user *auth.User) error
+	UpdatePassword(email, password string) error
+}
+
+// User минимальная структура
+type User struct {
+	Email string
+}
 
 // CompanyStorage определяет методы для работы с компаниями
 type CompanyStorage interface {
@@ -40,6 +53,7 @@ type CompanyStorage interface {
 	GetServicesByBranch(branchID uuid.UUID) ([]*ServiceInBranch, error)
 
 	GetBranchServByID(branchServID uuid.UUID) (BranchServ, error)
+	AddUserToPartners(email, inn string) error
 }
 
 // PostgresCompanyStorage реализует CompanyStorage для PostgreSQL.
@@ -279,4 +293,20 @@ func (s *PostgresCompanyStorage) Create(company Company) (*Company, error) {
 	}
 
 	return &company, nil
+}
+
+// Добавление нового пользователя в компанию
+func (s *PostgresCompanyStorage) AddUserToPartners(email, inn string) error {
+	query := `INSERT INTO partners_users (email, inn) VALUES ($1, $2)`
+
+	_, err := s.DB.Exec(query, email, inn)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return fmt.Errorf("user already exists in partners_users")
+		}
+		return fmt.Errorf("failed to add user to partners: %w", err)
+	}
+
+	return nil
 }

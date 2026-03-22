@@ -59,6 +59,15 @@ func main() {
 		VerificationTTL: jwt.VerificationTTL,
 	}
 
+	// Запуск обработчиков из пакета auth
+	userStorage := auth.NewPostgresUserStorage(database)
+	tsUserStorage := auth.NewPostgresTSUserStorage(database)
+	refreshTokenStorage := auth.NewPostgresRefreshTokenStorage(database)
+	verificationStorage := auth.NewMemoryVerificationStorage()
+
+	authService := auth.NewAuthManager(userStorage, refreshTokenStorage, verificationStorage, tsUserStorage, emailService, authConfig)
+	authHandler := auth.NewHandler(authService)
+
 	//Запуск обработчиков из пакета servise
 	serviceStorage := service.NewPostgresServiceStorage(database)
 	serviceManager := service.NewServiceManager(serviceStorage)
@@ -66,7 +75,7 @@ func main() {
 
 	//Запуск обработчиков из пакета company
 	companyStorage := company.NewPostgresCompanyStorage(database)
-	companyManager := company.NewCompanyManager(companyStorage)
+	companyManager := company.NewCompanyManager(companyStorage, userStorage)
 	companyHandler := company.NewHandler(companyManager)
 
 	clientStorage := client.NewPostgresClientStorage(database)
@@ -80,15 +89,6 @@ func main() {
 	branchStorage := branch.NewPostgresBranchStorage(database)
 	branchManager := branch.NewBranchManager(branchStorage)
 	branchHandler := branch.NewHandler(branchManager)
-
-	// Запуск обработчиков из пакета auth
-	userStorage := auth.NewPostgresUserStorage(database)
-	tsUserStorage := auth.NewPostgresTSUserStorage(database)
-	refreshTokenStorage := auth.NewPostgresRefreshTokenStorage(database)
-	verificationStorage := auth.NewMemoryVerificationStorage()
-
-	authService := auth.NewAuthManager(userStorage, refreshTokenStorage, verificationStorage, tsUserStorage, emailService, authConfig)
-	authHandler := auth.NewHandler(authService)
 
 	// Запуск обработчиков из пакета admin
 	adminStorage := admin.NewPostgresAdminStorage(database)

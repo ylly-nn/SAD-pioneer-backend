@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"src/internal/middleware"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
@@ -292,4 +293,52 @@ func (h *Handler) GetServDetailsByBranchServId(w http.ResponseWriter, r *http.Re
 		http.Error(w, "failed to encode response", http.StatusInternalServerError)
 		return
 	}
+}
+
+// Обрабатывает Post /company/users
+func (h *Handler) AddNewUserToCompany(w http.ResponseWriter, r *http.Request) {
+	// Получение claims
+	claims, ok := r.Context().Value("user").(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Извлечение email из claims
+	userEmail, ok := claims["email"].(string)
+	if !ok || userEmail == "" {
+		http.Error(w, "Invalid token: email not found", http.StatusUnauthorized)
+		return
+	}
+
+	var req AddUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := middleware.ValidateStruct(req); err != nil {
+		middleware.SendValidationError(w, err)
+		return
+	}
+
+	// Добавление пользователя
+	err := h.company.AddUserToCompany(userEmail, req.Email)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrUserNotPartner):
+			http.Error(w, "User does not have a company", http.StatusForbidden)
+		case errors.Is(err, ErrCompanyNotFound):
+			http.Error(w, "Company not found", http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "User added to company successfully",
+		"email":   req.Email,
+	})
 }

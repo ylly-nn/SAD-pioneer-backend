@@ -83,3 +83,8 @@ type BranchServ struct {
 	Service        uuid.UUID       `json:"service"`
 	ServiceDetails json.RawMessage `json:"service_detalis"`
 }
+
+// AddUserRequest - запрос на добавление нового пользователя
+type AddUserRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
