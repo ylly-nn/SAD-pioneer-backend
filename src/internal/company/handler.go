@@ -393,3 +393,50 @@ func (h *Handler) AddNewBranchToCompany(w http.ResponseWriter, r *http.Request) 
 		"close_time": req.CloseTime,
 	})
 }
+
+// GetCompanyOrders обрабатывает GET /company/orders
+func (h *Handler) GetCompanyOrders(w http.ResponseWriter, r *http.Request) {
+	// Получаем claims из контекста
+	claims, ok := r.Context().Value("user").(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "unauthorized: missing user claims", http.StatusUnauthorized)
+		return
+	}
+
+	email, ok := claims["email"].(string)
+	if !ok || email == "" {
+		http.Error(w, "unauthorized: email not found in token", http.StatusUnauthorized)
+		return
+	}
+
+	orders, err := h.company.GetCompanyOrders(email)
+	if err != nil {
+		// Обрабатываем известные ошибки
+		if errors.Is(err, ErrUserNotPartner) {
+			http.Error(w, "user is not a partner", http.StatusForbidden)
+			return
+		}
+		if errors.Is(err, ErrBranchNotFound) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(nil) // тело ответа: null
+			return
+		}
+		if errors.Is(err, ErrOrderNotFound) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(nil) // тело ответа: null
+			return
+		}
+
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Успешный ответ – всегда массив, даже пустой
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(orders); err != nil {
+		http.Error(w, "failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}

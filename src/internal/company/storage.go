@@ -21,6 +21,7 @@ var (
 	ErrBranchNotFound       = errors.New("branch not found")
 	ErrBranchesNotFound     = errors.New("company has no branches")
 	ErrBranchServNotFound   = errors.New("service by branch not found")
+	ErrOrderNotFound        = errors.New("order not found")
 )
 
 // UserStorage интерфейс для проверки существования пользователя
@@ -60,6 +61,8 @@ type CompanyStorage interface {
 	AddNewBranchToCompany(city, address, inn_company string, open_time, close_time timeparsing.TimeOnly) error
 
 	CheckBranchAddressExists(inn_company, address, city string) (bool, error)
+
+	GetOrdersByBranch(branchID uuid.UUID) ([]*CompanyOrder, error)
 }
 
 // PostgresCompanyStorage реализует CompanyStorage для PostgreSQL.
@@ -70,6 +73,65 @@ type PostgresCompanyStorage struct {
 // NewPostgresCompanyStorage создаёт новый экземпляр PostgresCompanyStorage.
 func NewPostgresCompanyStorage(sqlDB *sql.DB) *PostgresCompanyStorage {
 	return &PostgresCompanyStorage{Storage: db.NewStorage(sqlDB)}
+}
+
+// GetOrdersByBranch возвращает все заказы филиала по его ID.
+func (s *PostgresCompanyStorage) GetOrdersByBranch(branchID uuid.UUID) ([]*CompanyOrder, error) {
+	rows, err := s.DB.Query(`
+        SELECT  o.id, o.users, o.service_by_branch, s.name, 
+        	o.start_moment, o.end_moment, o.order_details
+        FROM orders o
+        JOIN branch_services bs ON bs.id = o.service_by_branch
+        JOIN branches b ON b.id = bs.branch
+        JOIN services s ON s.id = bs.service
+        WHERE b.id = $1
+    `, branchID)
+	if err != nil {
+		return nil, fmt.Errorf("query orders by branch %v: %w", branchID, err)
+	}
+	defer rows.Close()
+
+	var orders []*CompanyOrder
+	for rows.Next() {
+		var ord CompanyOrder
+		var detailsRaw json.RawMessage
+
+		err := rows.Scan(
+			&ord.ID,
+			&ord.Users,
+			&ord.ServiceByBranch,
+			&ord.NameService,
+			&ord.StartMoment,
+			&ord.EndMoment,
+			&detailsRaw,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scan order: %w", err)
+		}
+
+		if len(detailsRaw) > 0 {
+			var temp map[string]int
+			if err := json.Unmarshal(detailsRaw, &temp); err != nil {
+				return nil, fmt.Errorf("unmarshal order details: %w", err)
+			}
+			detailsSlice := make([]ServDetails, 0, len(temp))
+			for k, v := range temp {
+				detailsSlice = append(detailsSlice, ServDetails{Detail: k, Duration: v})
+			}
+			ord.OrderDetails = detailsSlice
+		}
+
+		orders = append(orders, &ord)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration: %w", err)
+	}
+
+	if len(orders) == 0 {
+		return nil, ErrOrderNotFound
+	}
+
+	return orders, nil
 }
 
 // Получение из бд branch_serv по id если нет, ошибка - ErrBranchServNotFound

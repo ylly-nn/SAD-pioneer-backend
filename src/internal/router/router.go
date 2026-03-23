@@ -52,6 +52,7 @@ func New(authMiddleware *middleware.AuthMiddleware, adminMiddleware *middleware.
 		r.With(authMiddleware.Authenticate).Get("/branch/service/{branchServID}", companyHandler.GetServDetailsByBranchServId)
 		r.With(authMiddleware.Authenticate).Post("/users", companyHandler.AddNewUserToCompany)
 		r.With(authMiddleware.Authenticate).Post("/branch", companyHandler.AddNewBranchToCompany)
+		r.With(authMiddleware.Authenticate).Get("/orders", companyHandler.GetCompanyOrders)
 	})
 
 	r.Route("/client", func(r chi.Router) {

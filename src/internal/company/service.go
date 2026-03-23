@@ -165,23 +165,23 @@ func (m *CompanyManager) GetBranchByIdEmail(branch_id uuid.UUID, email string) (
 // Возвращаемые ошибки:  ErrUserNotPartner, ErrBranchesNotFound
 // ErrBranchServNotFound, ErrBranchServNotAvailable
 // ErrBranchServNotAvailable, ErrServiceDetailsInvalid
-func (m *CompanyManager) GetServDetailsByBranchServId(branchServID uuid.UUID, email string) ([]*CompanyServDetailsResponse, error) {
+func (m *CompanyManager) GetServDetailsByBranchServId(branchServID uuid.UUID, email string) ([]*ServDetails, error) {
 	isPartner, err := m.UserIsPartner(email)
 	if err != nil {
-		return []*CompanyServDetailsResponse{}, err
+		return []*ServDetails{}, err
 	}
 	if isPartner.IsPartner != true {
-		return []*CompanyServDetailsResponse{}, ErrUserNotPartner
+		return []*ServDetails{}, ErrUserNotPartner
 	}
 
 	branchServ, err := m.storage.GetBranchServByID(branchServID)
 	if err != nil {
-		return []*CompanyServDetailsResponse{}, err
+		return []*ServDetails{}, err
 	}
 
 	companyBranch, err := m.storage.GetBranchesByInn(isPartner.Inn)
 	if err != nil {
-		return []*CompanyServDetailsResponse{}, err
+		return []*ServDetails{}, err
 	}
 
 	//создание массива из id филиалов компании
@@ -194,11 +194,11 @@ func (m *CompanyManager) GetServDetailsByBranchServId(branchServID uuid.UUID, em
 	found := slices.Contains(branchIDs, branchServ.Branch)
 
 	if !found {
-		return []*CompanyServDetailsResponse{}, ErrBranchServNotAvailable
+		return []*ServDetails{}, ErrBranchServNotAvailable
 	}
 
 	if len(branchServ.ServiceDetails) == 0 || string(branchServ.ServiceDetails) == "null" {
-		return []*CompanyServDetailsResponse{}, ErrBranchServIsNull
+		return []*ServDetails{}, ErrBranchServIsNull
 	}
 
 	var detailsMap map[string]int
@@ -206,15 +206,64 @@ func (m *CompanyManager) GetServDetailsByBranchServId(branchServID uuid.UUID, em
 		return nil, ErrServiceDetailsInvalid
 	}
 
-	var result []*CompanyServDetailsResponse
+	var result []*ServDetails
 	for detail, duration := range detailsMap {
-		result = append(result, &CompanyServDetailsResponse{
+		result = append(result, &ServDetails{
 			Detail:   detail,
 			Duration: duration,
 		})
 	}
 	return result, nil
 
+}
+
+// GetCompanyOrders возвращает заказы по всем филиалам компании партнёра
+func (m *CompanyManager) GetCompanyOrders(email string) ([]*CompanyBranchOrderResponse, error) {
+	// Проверяем, является ли пользователь партнёром
+	isPartner, err := m.UserIsPartner(email)
+	if err != nil {
+		return nil, fmt.Errorf("check partner status: %w", err)
+	}
+	if !isPartner.IsPartner {
+		return nil, ErrUserNotPartner
+	}
+
+	// Получаем все филиалы компании по ИНН
+	branches, err := m.storage.GetBranchesByInn(isPartner.Inn)
+	if err != nil {
+		if errors.Is(err, ErrBranchesNotFound) {
+			return []*CompanyBranchOrderResponse{}, ErrBranchNotFound
+		}
+		return nil, fmt.Errorf("get branches: %w", err)
+	}
+
+	var result []*CompanyBranchOrderResponse
+
+	// Для каждого филиала получаем заказы
+	for _, branch := range branches {
+		orders, err := m.storage.GetOrdersByBranch(branch.ID)
+		if err != nil {
+			// Если заказов нет, пропускаем филиал
+			if errors.Is(err, ErrOrderNotFound) {
+				continue
+			}
+			// Другая ошибка — прерываем выполнение
+			return nil, fmt.Errorf("get orders for branch %s: %w", branch.ID, err)
+		}
+
+		// Если заказы есть, добавляем филиал в ответ
+		result = append(result, &CompanyBranchOrderResponse{
+			BranchID: branch.ID,
+			City:     branch.City,
+			Address:  branch.Address,
+			Orders:   orders,
+		})
+	}
+	if len(result) == 0 {
+		return nil, ErrOrderNotFound
+	}
+
+	return result, nil
 }
 
 // Проверка что у пользователя есть организация

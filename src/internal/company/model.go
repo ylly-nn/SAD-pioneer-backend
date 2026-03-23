@@ -2,6 +2,7 @@ package company
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -71,7 +72,7 @@ type ServiceInBranch struct {
 }
 
 // Струтура для ответа на Get /company/branch/service/{branchserID}
-type CompanyServDetailsResponse struct {
+type ServDetails struct {
 	Detail   string `json:"detail" example:"Мойка салона"`
 	Duration int    `json:"duration_min" example:"40"`
 }
@@ -95,4 +96,21 @@ type AddBranchRequest struct {
 	Address   string               `json:"address" validate:"required"`
 	OpenTime  timeparsing.TimeOnly `json:"open_time" validate:"required"`
 	CloseTime timeparsing.TimeOnly `json:"close_time" validate:"required"`
+}
+
+type CompanyBranchOrderResponse struct {
+	BranchID uuid.UUID `json:"branch_id"`
+	City     string    `json:"city"`
+	Address  string    `json:"address"`
+	Orders   []*CompanyOrder
+}
+
+type CompanyOrder struct {
+	ID              uuid.UUID  `json:"id" example:"e77fd339-9478-4375-82c1-215936a68b8a"`
+	Users           string     `json:"users" example:"ex@mail.ru"`
+	ServiceByBranch uuid.UUID  `json:"service_by_branch" example:"917e77fa-1672-4dfb-8507-d5755b31ebb3"`
+	NameService     string     `json:"name_service" example:"автомойка"`
+	StartMoment     time.Time  `json:"start_moment" example:"2026-04-16T05:00:00Z"`
+	EndMoment       *time.Time `json:"end_moment,omitempty" example:"2026-04-16T05:20:00Z"`
+	OrderDetails    []ServDetails
 }

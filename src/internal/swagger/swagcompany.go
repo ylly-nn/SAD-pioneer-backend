@@ -71,5 +71,5 @@ func getCompanyBranchesBranchID() {
 // @Failure      500  {string}  string  "internal server error или failed to encode response"
 // @Router       /company/branch/service/{branchServID} [get]
 func getCompanyBranchServiceBranchserv_id() {
-	var _ = company.CompanyServDetailsResponse{}
+	var _ = company.ServDetails{}
 }
