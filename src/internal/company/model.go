@@ -88,3 +88,11 @@ type BranchServ struct {
 type AddUserRequest struct {
 	Email string `json:"email" validate:"required,email"`
 }
+
+// AddBranchRequest - запрос на добавление нового филиала
+type AddBranchRequest struct {
+	City      string               `json:"city" validate:"required"`
+	Address   string               `json:"address" validate:"required"`
+	OpenTime  timeparsing.TimeOnly `json:"open_time" validate:"required"`
+	CloseTime timeparsing.TimeOnly `json:"close_time" validate:"required"`
+}

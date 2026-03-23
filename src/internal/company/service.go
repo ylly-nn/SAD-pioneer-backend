@@ -4,7 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
+	"src/internal/city"
+	"src/internal/timeparsing"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -15,7 +19,11 @@ var (
 	ErrBranchServNotAvailable = errors.New("service in the branch not available to the user")
 	ErrBranchServIsNull       = errors.New("details for service in the branch not found")
 	ErrServiceDetailsInvalid  = errors.New("invalid service details format")
+	ErrEmptyCity              = errors.New("city cannot be empty")
+	ErrInvalidCity            = errors.New("city is not in the list of Russian cities")
 )
+
+var hyphenSpaces = regexp.MustCompile(`\s*-\s*`)
 
 // CompanyManager содержит бизнес-логику для работы с компаниями.
 type CompanyManager struct {
@@ -274,6 +282,65 @@ func (m *CompanyManager) AddUserToCompany(userEmail, newUserEmail string) error 
 
 	if err := m.storage.AddUserToPartners(newUserEmail, inn); err != nil {
 		return fmt.Errorf("failed to add user to partners: %w", err)
+	}
+
+	return nil
+}
+
+// AddBranchToCompany добавляет новый филиал в компанию
+func (m *CompanyManager) AddBranchToCompany(userEmail, cityName, address string, open_time, close_time timeparsing.TimeOnly) error {
+	// Проверка, что добавляющий пользователь есть в компании
+	userIsPartner, err := m.UserIsPartner(userEmail)
+	if err != nil {
+		return fmt.Errorf("failed to check user email: %w", err)
+	}
+	if !userIsPartner.IsPartner {
+		return ErrUserNotPartner
+	}
+
+	inn := userIsPartner.Inn
+
+	// Проверка, что компания с ИНН существует и пользователь находится в компании
+	if userIsPartner.Inn != inn {
+		return errors.New("user does not have access to this company")
+	}
+
+	company, err := m.storage.GetCompanyByInn(inn)
+	if err != nil {
+		return ErrCompanyNotFound
+	}
+	if company == nil {
+		return ErrCompanyNotFound
+	}
+
+	if cityName == "" {
+		return ErrEmptyCity
+	}
+
+	fields := strings.Fields(cityName)
+	if len(fields) == 0 {
+		return ErrEmptyCity
+	}
+	cityName = strings.Join(fields, " ")
+
+	cityName = hyphenSpaces.ReplaceAllString(cityName, "-")
+
+	canonicalCity, ok := city.ValidCitiesMap[strings.ToLower(cityName)]
+	if !ok {
+		return ErrInvalidCity
+	}
+
+	// Проверка на уникальность адреса для этой компании
+	exists, err := m.storage.CheckBranchAddressExists(inn, address, canonicalCity)
+	if err != nil {
+		return fmt.Errorf("failed to check branch address: %w", err)
+	}
+	if exists {
+		return errors.New("branch with this address already exists for this company")
+	}
+
+	if err := m.storage.AddNewBranchToCompany(canonicalCity, address, inn, open_time, close_time); err != nil {
+		return fmt.Errorf("failed to add branch to company: %w", err)
 	}
 
 	return nil

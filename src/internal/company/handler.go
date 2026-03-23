@@ -342,3 +342,54 @@ func (h *Handler) AddNewUserToCompany(w http.ResponseWriter, r *http.Request) {
 		"email":   req.Email,
 	})
 }
+
+// Обрабатывает Post /company/branch
+func (h *Handler) AddNewBranchToCompany(w http.ResponseWriter, r *http.Request) {
+	// Получение claims
+	claims, ok := r.Context().Value("user").(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Извлечение email из claims
+	userEmail, ok := claims["email"].(string)
+	if !ok || userEmail == "" {
+		http.Error(w, "Invalid token: email not found", http.StatusUnauthorized)
+		return
+	}
+
+	var req AddBranchRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := middleware.ValidateStruct(req); err != nil {
+		middleware.SendValidationError(w, err)
+		return
+	}
+
+	// Добавление филиала
+	err := h.company.AddBranchToCompany(userEmail, req.City, req.Address, req.OpenTime, req.CloseTime)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrUserNotPartner):
+			http.Error(w, "User does not have a company", http.StatusForbidden)
+		case errors.Is(err, ErrCompanyNotFound):
+			http.Error(w, "Company not found", http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message":    "Branch added to company successfully",
+		"city":       req.City,
+		"address":    req.Address,
+		"open_time":  req.OpenTime,
+		"close_time": req.CloseTime,
+	})
+}

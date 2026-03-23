@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -45,4 +46,31 @@ func (t TimeOnly) MarshalJSON() ([]byte, error) {
 // Value реализует driver.Valuer для возможной записи в БД (опционально).
 func (t TimeOnly) Value() (driver.Value, error) {
 	return time.Time(t).Format("15:04:05-07:00"), nil
+}
+
+// UnmarshalJSON реализует json.Unmarshaler
+func (t *TimeOnly) UnmarshalJSON(data []byte) error {
+	s := strings.Trim(string(data), `"`)
+	if s == "" || s == "null" {
+		*t = TimeOnly(time.Time{})
+		return nil
+	}
+
+	// Форматы
+	formats := []string{
+		"15:04:05-07:00", // 10:00:00+03:00
+		"15:04:05-07",    // 10:00:00+03
+		"15:04:05Z07:00", // 10:00:00Z03:00
+		"15:04:05",       // 10:00:00
+	}
+
+	for _, format := range formats {
+		parsed, err := time.Parse(format, s)
+		if err == nil {
+			*t = TimeOnly(parsed)
+			return nil
+		}
+	}
+
+	return fmt.Errorf("invalid time format: %s", s)
 }

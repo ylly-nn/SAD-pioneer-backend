@@ -8,6 +8,7 @@ import (
 
 	"src/internal/auth"
 	"src/internal/db"
+	"src/internal/timeparsing"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -53,7 +54,12 @@ type CompanyStorage interface {
 	GetServicesByBranch(branchID uuid.UUID) ([]*ServiceInBranch, error)
 
 	GetBranchServByID(branchServID uuid.UUID) (BranchServ, error)
+
 	AddUserToPartners(email, inn string) error
+
+	AddNewBranchToCompany(city, address, inn_company string, open_time, close_time timeparsing.TimeOnly) error
+
+	CheckBranchAddressExists(inn_company, address, city string) (bool, error)
 }
 
 // PostgresCompanyStorage реализует CompanyStorage для PostgreSQL.
@@ -309,4 +315,29 @@ func (s *PostgresCompanyStorage) AddUserToPartners(email, inn string) error {
 	}
 
 	return nil
+}
+
+// Добавление нового филиала
+func (s *PostgresCompanyStorage) AddNewBranchToCompany(city, address, inn_company string, open_time, close_time timeparsing.TimeOnly) error {
+	query := `INSERT INTO branches (city, address, inn_company, open_time, close_time) VALUES ($1, $2, $3, $4, $5)`
+
+	_, err := s.DB.Exec(query, city, address, inn_company, open_time, close_time)
+	if err != nil {
+		return fmt.Errorf("failed to add branch to company: %w", err)
+	}
+
+	return nil
+}
+
+// CheckBranchAddressExists проверяет существует ли филиал с таким адресом для компании
+func (s *PostgresCompanyStorage) CheckBranchAddressExists(inn_company, address, city string) (bool, error) {
+	var exists bool
+	query := `SELECT EXISTS(SELECT 1 FROM branches WHERE inn_company = $1 AND address = $2 AND city = $3)`
+
+	err := s.DB.QueryRow(query, inn_company, address, city).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check branch address existence: %w", err)
+	}
+
+	return exists, nil
 }
