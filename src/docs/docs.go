@@ -651,7 +651,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Детали услуги (если данные отсутствуют, возвращается null)",
                         "schema": {
-                            "$ref": "#/definitions/company.CompanyServDetailsResponse"
+                            "$ref": "#/definitions/company.ServDetails"
                         }
                     },
                     "400": {
@@ -779,6 +779,55 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "User does not have a company или User does not have access to the branch",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error или failed to encode response",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/company/orders": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает список заказов компании, сгруппированных по филиалам. Доступно только для партнёров.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "company"
+                ],
+                "summary": "Получить заказы компании",
+                "responses": {
+                    "200": {
+                        "description": "Список филиалов с заказами (если данных нет, возвращается null)",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/company.CompanyBranchOrderResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized: missing user claims или email not found in token",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "user is not a partner",
                         "schema": {
                             "type": "string"
                         }
@@ -1064,6 +1113,26 @@ const docTemplate = `{
                 }
             }
         },
+        "company.CompanyBranchOrderResponse": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "branch_id": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "orders": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/company.CompanyOrder"
+                    }
+                }
+            }
+        },
         "company.CompanyBranchWithServ": {
             "type": "object",
             "properties": {
@@ -1093,6 +1162,41 @@ const docTemplate = `{
                 }
             }
         },
+        "company.CompanyOrder": {
+            "type": "object",
+            "properties": {
+                "end_moment": {
+                    "type": "string",
+                    "example": "2026-04-16T05:20:00Z"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "e77fd339-9478-4375-82c1-215936a68b8a"
+                },
+                "name_service": {
+                    "type": "string",
+                    "example": "автомойка"
+                },
+                "orderDetails": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/company.ServDetails"
+                    }
+                },
+                "service_by_branch": {
+                    "type": "string",
+                    "example": "917e77fa-1672-4dfb-8507-d5755b31ebb3"
+                },
+                "start_moment": {
+                    "type": "string",
+                    "example": "2026-04-16T05:00:00Z"
+                },
+                "users": {
+                    "type": "string",
+                    "example": "ex@mail.ru"
+                }
+            }
+        },
         "company.CompanyResponse": {
             "type": "object",
             "properties": {
@@ -1118,7 +1222,7 @@ const docTemplate = `{
                 }
             }
         },
-        "company.CompanyServDetailsResponse": {
+        "company.ServDetails": {
             "type": "object",
             "properties": {
                 "detail": {

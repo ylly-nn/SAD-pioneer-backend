@@ -64,12 +64,30 @@ func getCompanyBranchesBranchID() {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        branchServID  path      string  true  "UUID записи услуги филиала"  example(6fdd2352-ffc4-4140-b54c-67657f841c1c)
-// @Success      200  {object}  company.CompanyServDetailsResponse  "Детали услуги (если данные отсутствуют, возвращается null)"
+// @Success      200  {object}  company.ServDetails  "Детали услуги (если данные отсутствуют, возвращается null)"
 // @Failure      400  {string}  string  "invalid branch service ID или invalid service details format"
 // @Failure      401  {string}  string  "unauthorized: missing user claims или email not found in token"
 // @Failure      403  {string}  string  "user is not a partner или branch service not available"
 // @Failure      500  {string}  string  "internal server error или failed to encode response"
 // @Router       /company/branch/service/{branchServID} [get]
 func getCompanyBranchServiceBranchserv_id() {
+	var _ = company.ServDetails{}
+}
+
+// getCompanyOrders возвращает список заказов компании по филиалам
+// @Summary      Получить заказы компании
+// @Description  Возвращает список заказов компании, сгруппированных по филиалам. Доступно только для партнёров.
+// @Tags         company
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {array}   company.CompanyBranchOrderResponse  "Список филиалов с заказами (если данных нет, возвращается null)"
+// @Failure      401  {string}  string  "unauthorized: missing user claims или email not found in token"
+// @Failure      403  {string}  string  "user is not a partner"
+// @Failure      500  {string}  string  "internal server error или failed to encode response"
+// @Router       /company/orders [get]
+func getCompanyOrders() {
+	var _ = company.CompanyBranchOrderResponse{}
+	var _ = company.CompanyOrder{}
 	var _ = company.ServDetails{}
 }

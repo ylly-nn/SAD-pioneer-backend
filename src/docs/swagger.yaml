@@ -124,6 +124,19 @@ definitions:
         format: hh:mm:ss+hh:mm
         type: string
     type: object
+  company.CompanyBranchOrderResponse:
+    properties:
+      address:
+        type: string
+      branch_id:
+        type: string
+      city:
+        type: string
+      orders:
+        items:
+          $ref: '#/definitions/company.CompanyOrder'
+        type: array
+    type: object
   company.CompanyBranchWithServ:
     properties:
       address:
@@ -145,6 +158,31 @@ definitions:
           $ref: '#/definitions/company.ServiceInBranch'
         type: array
     type: object
+  company.CompanyOrder:
+    properties:
+      end_moment:
+        example: "2026-04-16T05:20:00Z"
+        type: string
+      id:
+        example: e77fd339-9478-4375-82c1-215936a68b8a
+        type: string
+      name_service:
+        example: автомойка
+        type: string
+      orderDetails:
+        items:
+          $ref: '#/definitions/company.ServDetails'
+        type: array
+      service_by_branch:
+        example: 917e77fa-1672-4dfb-8507-d5755b31ebb3
+        type: string
+      start_moment:
+        example: "2026-04-16T05:00:00Z"
+        type: string
+      users:
+        example: ex@mail.ru
+        type: string
+    type: object
   company.CompanyResponse:
     properties:
       inn:
@@ -163,7 +201,7 @@ definitions:
         example: Технопром
         type: string
     type: object
-  company.CompanyServDetailsResponse:
+  company.ServDetails:
     properties:
       detail:
         example: Мойка салона
@@ -725,7 +763,7 @@ paths:
         "200":
           description: Детали услуги (если данные отсутствуют, возвращается null)
           schema:
-            $ref: '#/definitions/company.CompanyServDetailsResponse'
+            $ref: '#/definitions/company.ServDetails'
         "400":
           description: invalid branch service ID или invalid service details format
           schema:
@@ -819,6 +857,38 @@ paths:
       security:
       - BearerAuth: []
       summary: Получить филиал компании по ID
+      tags:
+      - company
+  /company/orders:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список заказов компании, сгруппированных по филиалам.
+        Доступно только для партнёров.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список филиалов с заказами (если данных нет, возвращается null)
+          schema:
+            items:
+              $ref: '#/definitions/company.CompanyBranchOrderResponse'
+            type: array
+        "401":
+          description: 'unauthorized: missing user claims или email not found in token'
+          schema:
+            type: string
+        "403":
+          description: user is not a partner
+          schema:
+            type: string
+        "500":
+          description: internal server error или failed to encode response
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить заказы компании
       tags:
       - company
   /order:
