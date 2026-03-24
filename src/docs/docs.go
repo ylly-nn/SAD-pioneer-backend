@@ -1191,6 +1191,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2026-04-16T05:00:00Z"
                 },
+                "status": {
+                    "type": "string",
+                    "example": "create"
+                },
                 "users": {
                     "type": "string",
                     "example": "ex@mail.ru"
@@ -1287,6 +1291,10 @@ const docTemplate = `{
                     "type": "string",
                     "format": "yyyy-mm-ddThh:mm:ss+(Z)hh:mm",
                     "example": "2026-03-16T09:30:00+04:00"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "create"
                 }
             }
         },
@@ -1350,6 +1358,10 @@ const docTemplate = `{
                 "start_moment": {
                     "type": "string",
                     "example": "2026-04-16T05:00:00Z"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "create"
                 },
                 "users": {
                     "type": "string",

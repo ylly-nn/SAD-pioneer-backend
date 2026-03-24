@@ -112,5 +112,6 @@ type CompanyOrder struct {
 	NameService     string     `json:"name_service" example:"автомойка"`
 	StartMoment     time.Time  `json:"start_moment" example:"2026-04-16T05:00:00Z"`
 	EndMoment       *time.Time `json:"end_moment,omitempty" example:"2026-04-16T05:20:00Z"`
+	Status          string     `json:"status" example:"create"`
 	OrderDetails    []ServDetails
 }

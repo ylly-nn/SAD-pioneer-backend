@@ -40,13 +40,13 @@ func NewPostrgesOrderStorage(sqlDB *sql.DB) *PostgresOrderStorage {
 // Create добавляет новый заказ в таблицу orders
 // Возвращает созданный заказ с заполненным ID.
 func (s *PostgresOrderStorage) Create(order Order) (*Order, error) {
-
+	order.Status = "create"
 	var id uuid.UUID
 	err := s.DB.QueryRow(`
-		INSERT INTO orders (users, service_by_branch, start_moment, end_moment, order_details)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO orders (users, service_by_branch, start_moment, end_moment, order_details, status)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
-	`, order.Users, order.ServiceByBranch, order.StartMoment, order.EndMoment, order.OrderDetails).Scan(&id)
+	`, order.Users, order.ServiceByBranch, order.StartMoment, order.EndMoment, order.OrderDetails, order.Status).Scan(&id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert order: %w", err)
 	}
@@ -57,6 +57,7 @@ func (s *PostgresOrderStorage) Create(order Order) (*Order, error) {
 		ServiceByBranch: order.ServiceByBranch,
 		StartMoment:     order.StartMoment,
 		EndMoment:       order.EndMoment,
+		Status:          order.Status,
 		OrderDetails:    order.OrderDetails,
 	}
 	return createdOrder, nil
@@ -220,7 +221,7 @@ func (s *PostgresOrderStorage) GetByCompany(inn string) ([]*FullOrder, error) {
 // Выводит полную информацию о заказе для определённого клиента
 func (s *PostgresOrderStorage) GetByClient(email string) ([]*FullOrder, error) {
 	rows, err := s.DB.Query(`
-        SELECT o.id, ts.email, o.service_by_branch, b.inn_company, c.org_short_name, b.city, b.address, s.name, o.start_moment, o.end_moment, o.order_details
+        SELECT o.id, ts.email, o.service_by_branch, b.inn_company, c.org_short_name, b.city, b.address, s.name, o.start_moment, o.end_moment, o.order_details, o.status
         FROM orders o
         JOIN ts_users ts ON o.users = ts.email
         JOIN branch_services bs ON o.service_by_branch = bs.id
@@ -252,6 +253,7 @@ func (s *PostgresOrderStorage) GetByClient(email string) ([]*FullOrder, error) {
 			&ord.StartMoment,
 			&endMoment,
 			&orderDetails,
+			&ord.Status,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan row: %w", err)

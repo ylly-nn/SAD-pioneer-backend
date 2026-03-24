@@ -79,7 +79,7 @@ func NewPostgresCompanyStorage(sqlDB *sql.DB) *PostgresCompanyStorage {
 func (s *PostgresCompanyStorage) GetOrdersByBranch(branchID uuid.UUID) ([]*CompanyOrder, error) {
 	rows, err := s.DB.Query(`
         SELECT  o.id, o.users, o.service_by_branch, s.name, 
-        	o.start_moment, o.end_moment, o.order_details
+        	o.start_moment, o.end_moment, o.order_details, o.status
         FROM orders o
         JOIN branch_services bs ON bs.id = o.service_by_branch
         JOIN branches b ON b.id = bs.branch
@@ -104,6 +104,7 @@ func (s *PostgresCompanyStorage) GetOrdersByBranch(branchID uuid.UUID) ([]*Compa
 			&ord.StartMoment,
 			&ord.EndMoment,
 			&detailsRaw,
+			&ord.Status,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("scan order: %w", err)

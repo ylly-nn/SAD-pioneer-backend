@@ -179,6 +179,9 @@ definitions:
       start_moment:
         example: "2026-04-16T05:00:00Z"
         type: string
+      status:
+        example: create
+        type: string
       users:
         example: ex@mail.ru
         type: string
@@ -249,6 +252,9 @@ definitions:
         example: "2026-03-16T09:30:00+04:00"
         format: yyyy-mm-ddThh:mm:ss+(Z)hh:mm
         type: string
+      status:
+        example: create
+        type: string
     type: object
   order.CreateOrderRequest:
     properties:
@@ -293,6 +299,9 @@ definitions:
         type: string
       start_moment:
         example: "2026-04-16T05:00:00Z"
+        type: string
+      status:
+        example: create
         type: string
       users:
         example: ex@mail.ru

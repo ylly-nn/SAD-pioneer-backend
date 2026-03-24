@@ -265,6 +265,7 @@ func (m *OrderManager) GetByClient(email string) ([]*ClientOrderResponse, error)
 			Service:      fo.Service,
 			StartMoment:  fo.StartMoment,
 			EndMoment:    fo.EndMoment,
+			Status:       fo.Status,
 			OrderDetails: fo.OrderDetails,
 		})
 	}
