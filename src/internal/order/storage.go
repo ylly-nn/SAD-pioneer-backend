@@ -40,7 +40,7 @@ func NewPostrgesOrderStorage(sqlDB *sql.DB) *PostgresOrderStorage {
 // Create добавляет новый заказ в таблицу orders
 // Возвращает созданный заказ с заполненным ID.
 func (s *PostgresOrderStorage) Create(order Order) (*Order, error) {
-	order.Status = "create"
+	order.Status = OrderStatusCreate
 	var id uuid.UUID
 	err := s.DB.QueryRow(`
 		INSERT INTO orders (users, service_by_branch, start_moment, end_moment, order_details, status)

@@ -9,6 +9,14 @@ import (
 	"src/internal/timeparsing"
 )
 
+type OrderStatus string
+
+const (
+	OrderStatusCreate  OrderStatus = "create"  // заказ создан
+	OrderStatusApprove OrderStatus = "approve" // заказ подтверждён
+	OrderStatusReject  OrderStatus = "reject"  // заказ отклонён
+)
+
 // Соответсвует таблице Company
 // Используется для внутренней передачи данных
 type Company struct {
@@ -106,12 +114,12 @@ type CompanyBranchOrderResponse struct {
 }
 
 type CompanyOrder struct {
-	ID              uuid.UUID  `json:"id" example:"e77fd339-9478-4375-82c1-215936a68b8a"`
-	Users           string     `json:"users" example:"ex@mail.ru"`
-	ServiceByBranch uuid.UUID  `json:"service_by_branch" example:"917e77fa-1672-4dfb-8507-d5755b31ebb3"`
-	NameService     string     `json:"name_service" example:"автомойка"`
-	StartMoment     time.Time  `json:"start_moment" example:"2026-04-16T05:00:00Z"`
-	EndMoment       *time.Time `json:"end_moment,omitempty" example:"2026-04-16T05:20:00Z"`
-	Status          string     `json:"status" example:"create"`
+	ID              uuid.UUID   `json:"id" example:"e77fd339-9478-4375-82c1-215936a68b8a"`
+	Users           string      `json:"users" example:"ex@mail.ru"`
+	ServiceByBranch uuid.UUID   `json:"service_by_branch" example:"917e77fa-1672-4dfb-8507-d5755b31ebb3"`
+	NameService     string      `json:"name_service" example:"автомойка"`
+	StartMoment     time.Time   `json:"start_moment" example:"2026-04-16T05:00:00Z"`
+	EndMoment       *time.Time  `json:"end_moment,omitempty" example:"2026-04-16T05:20:00Z"`
+	Status          OrderStatus `json:"status" example:"create"`
 	OrderDetails    []ServDetails
 }

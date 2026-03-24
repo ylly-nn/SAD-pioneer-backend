@@ -440,3 +440,73 @@ func (h *Handler) GetCompanyOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+// UpdateOrderStatus обрабатывает PUT /company/order/status
+// Параметры query: orderID (UUID), status (approve|reject)
+func (h *Handler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
+
+	claims, ok := r.Context().Value("user").(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "unauthorized: missing user claims", http.StatusUnauthorized)
+		return
+	}
+
+	email, ok := claims["email"].(string)
+	if !ok || email == "" {
+		http.Error(w, "unauthorized: email not found in token", http.StatusUnauthorized)
+		return
+	}
+
+	orderIDStr := r.URL.Query().Get("orderID")
+	if orderIDStr == "" {
+		http.Error(w, "missing orderID parameter", http.StatusBadRequest)
+		return
+	}
+
+	orderID, err := uuid.Parse(orderIDStr)
+	if err != nil {
+		http.Error(w, "invalid orderID format: must be UUID", http.StatusBadRequest)
+		return
+	}
+
+	statusStr := r.URL.Query().Get("status")
+	if statusStr == "" {
+		http.Error(w, "missing status parameter", http.StatusBadRequest)
+		return
+	}
+
+	// 3. Вызываем бизнес-логику
+	updatedOrder, err := h.company.UpdateOrderStatus(email, orderID, statusStr)
+	if err != nil {
+		// Обрабатываем известные ошибки
+		switch {
+		case errors.Is(err, ErrStatus):
+			http.Error(w, ErrStatus.Error(), http.StatusBadRequest)
+
+		case errors.Is(err, ErrUserNotPartner):
+			http.Error(w, "user is not a partner", http.StatusForbidden)
+
+		case errors.Is(err, ErrOrderNotAvailable):
+			http.Error(w, ErrOrderNotAvailable.Error(), http.StatusForbidden)
+
+		case errors.Is(err, ErrOrderNotFound):
+			http.Error(w, ErrOrderNotAvailable.Error(), http.StatusForbidden)
+
+		case errors.Is(err, ErrBranchNotFound):
+			http.Error(w, ErrOrderNotAvailable.Error(), http.StatusForbidden)
+
+		case errors.Is(err, ErrUpdateStatus):
+			http.Error(w, ErrUpdateStatus.Error(), http.StatusBadRequest)
+
+		default:
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(updatedOrder); err != nil {
+		http.Error(w, "failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}

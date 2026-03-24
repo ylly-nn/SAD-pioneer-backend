@@ -7,6 +7,14 @@ import (
 	"github.com/google/uuid"
 )
 
+type OrderStatus string
+
+const (
+	OrderStatusCreate  OrderStatus = "create"  // заказ создан
+	OrderStatusApprove OrderStatus = "approve" // заказ подтверждён
+	OrderStatusReject  OrderStatus = "reject"  // заказ отклонён
+)
+
 // Order представляет заказ, соответствующий таблице orders в базе данных.
 type Order struct {
 	ID              uuid.UUID       `json:"id" example:"e77fd339-9478-4375-82c1-215936a68b8a"`
@@ -14,7 +22,7 @@ type Order struct {
 	ServiceByBranch uuid.UUID       `json:"service_by_branch" example:"917e77fa-1672-4dfb-8507-d5755b31ebb3"`
 	StartMoment     time.Time       `json:"start_moment" example:"2026-04-16T05:00:00Z"`
 	EndMoment       *time.Time      `json:"end_moment,omitempty" example:"2026-04-16T05:20:00Z"`
-	Status          string          `json:"status" example:"create"`
+	Status          OrderStatus     `json:"status" example:"create"`
 	OrderDetails    json.RawMessage `json:"order_details" swaggertype:"object"`
 }
 
@@ -63,7 +71,7 @@ type FullOrder struct {
 	Service         string          `json:"service"`
 	StartMoment     time.Time       `json:"start_moment"`
 	EndMoment       *time.Time      `json:"end_moment,omitempty"`
-	Status          string          `json:"status" example:"create"`
+	Status          OrderStatus     `json:"status" example:"create"`
 	OrderDetails    json.RawMessage `json:"order_details,omitempty"`
 }
 
@@ -76,6 +84,6 @@ type ClientOrderResponse struct {
 	Service      string          `json:"service" example:"Шиномонтаж"`
 	StartMoment  time.Time       `json:"start_moment" example:"2026-03-16T09:30:00+04:00" format:"yyyy-mm-ddThh:mm:ss+(Z)hh:mm"`
 	EndMoment    *time.Time      `json:"end_moment" example:"2026-03-16T11:05:00+04:00" format:"yyyy-mm-ddThh:mm:ss+(Z)hh:mm"`
-	Status       string          `json:"status" example:"create"`
+	Status       OrderStatus     `json:"status" example:"create"`
 	OrderDetails json.RawMessage `json:"order_details" swaggertype:"object"`
 }

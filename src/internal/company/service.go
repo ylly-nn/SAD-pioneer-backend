@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"regexp"
 	"slices"
 	"src/internal/city"
@@ -21,6 +22,9 @@ var (
 	ErrServiceDetailsInvalid  = errors.New("invalid service details format")
 	ErrEmptyCity              = errors.New("city cannot be empty")
 	ErrInvalidCity            = errors.New("city is not in the list of Russian cities")
+	ErrOrderNotAvailable      = errors.New("order not available to the user")
+	ErrUpdateStatus           = errors.New("status cannstatus cannot be changed to the selected oneot be changed to the selected one")
+	ErrStatus                 = errors.New("status must be approve or reject")
 )
 
 var hyphenSpaces = regexp.MustCompile(`\s*-\s*`)
@@ -393,4 +397,77 @@ func (m *CompanyManager) AddBranchToCompany(userEmail, cityName, address string,
 	}
 
 	return nil
+}
+
+// обновляет статус заказа со стороны организации с проверками доступа
+func (m *CompanyManager) UpdateOrderStatus(email string, orderId uuid.UUID, statusStr string) (*CompanyOrder, error) {
+	var status OrderStatus
+
+	if statusStr != "approve" && statusStr != "reject" {
+		return nil, ErrStatus
+	}
+
+	if statusStr == "approve" {
+		status = OrderStatusApprove
+	}
+
+	if statusStr == "reject" {
+		status = OrderStatusReject
+	}
+
+	isPartner, err := m.UserIsPartner(email)
+	if err != nil {
+		return nil, err
+	}
+
+	if isPartner.IsPartner != true {
+		return nil, ErrUserNotPartner
+	}
+
+	companyOrders, err := m.GetCompanyOrders(email)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Поиск нужного заказа и сбор ID
+	var targetOrder *CompanyOrder
+	var allOrderIDs []uuid.UUID
+	for _, branch := range companyOrders {
+		for _, order := range branch.Orders {
+			allOrderIDs = append(allOrderIDs, order.ID)
+			if order.ID == orderId {
+				targetOrder = order
+			}
+		}
+	}
+
+	log.Printf("Order IDs: %v", allOrderIDs)
+
+	if targetOrder == nil {
+		return nil, ErrOrderNotAvailable
+	}
+
+	// Проверка допустимости перехода статуса
+	currentStatus := targetOrder.Status
+	switch currentStatus {
+	case OrderStatusCreate:
+		if status != OrderStatusApprove && status != OrderStatusReject {
+			return nil, ErrUpdateStatus
+		}
+	case OrderStatusApprove:
+		if status != OrderStatusReject {
+			return nil, ErrUpdateStatus
+		}
+	default:
+		// reject или неизвестный статус - обновление запрещено
+		return nil, ErrUpdateStatus
+	}
+
+	updatedOrder, err := m.storage.UpdateOrderStatus(orderId, status)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedOrder, nil
 }

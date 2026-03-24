@@ -63,6 +63,8 @@ type CompanyStorage interface {
 	CheckBranchAddressExists(inn_company, address, city string) (bool, error)
 
 	GetOrdersByBranch(branchID uuid.UUID) ([]*CompanyOrder, error)
+
+	UpdateOrderStatus(orderID uuid.UUID, status OrderStatus) (*CompanyOrder, error)
 }
 
 // PostgresCompanyStorage реализует CompanyStorage для PostgreSQL.
@@ -73,6 +75,71 @@ type PostgresCompanyStorage struct {
 // NewPostgresCompanyStorage создаёт новый экземпляр PostgresCompanyStorage.
 func NewPostgresCompanyStorage(sqlDB *sql.DB) *PostgresCompanyStorage {
 	return &PostgresCompanyStorage{Storage: db.NewStorage(sqlDB)}
+}
+
+// UpdateOrderStatus обновляет статус заказа по его ID и возвращает обновлённый заказ.
+// Если заказ не найден, возвращает ErrOrderNotFound.
+func (s *PostgresCompanyStorage) UpdateOrderStatus(orderID uuid.UUID, status OrderStatus) (*CompanyOrder, error) {
+	result, err := s.DB.Exec(`
+		UPDATE orders
+		SET status = $1
+		WHERE id = $2
+	`, string(status), orderID)
+	if err != nil {
+		return nil, fmt.Errorf("update order status: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return nil, fmt.Errorf("get rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return nil, ErrOrderNotFound
+	}
+
+	row := s.DB.QueryRow(`
+		SELECT 
+			o.id, o.users, o.service_by_branch, s.name,
+			o.start_moment, o.end_moment, o.order_details, o.status
+		FROM orders o
+		JOIN branch_services bs ON bs.id = o.service_by_branch
+		JOIN services s ON s.id = bs.service
+		WHERE o.id = $1
+	`, orderID)
+
+	var ord CompanyOrder
+	var detailsRaw json.RawMessage
+
+	err = row.Scan(
+		&ord.ID,
+		&ord.Users,
+		&ord.ServiceByBranch,
+		&ord.NameService,
+		&ord.StartMoment,
+		&ord.EndMoment,
+		&detailsRaw,
+		&ord.Status,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrOrderNotFound
+		}
+		return nil, fmt.Errorf("scan updated order: %w", err)
+	}
+
+	if len(detailsRaw) > 0 {
+		var temp map[string]int
+		if err := json.Unmarshal(detailsRaw, &temp); err != nil {
+			return nil, fmt.Errorf("unmarshal order details: %w", err)
+		}
+		detailsSlice := make([]ServDetails, 0, len(temp))
+		for k, v := range temp {
+			detailsSlice = append(detailsSlice, ServDetails{Detail: k, Duration: v})
+		}
+		ord.OrderDetails = detailsSlice
+	}
+
+	return &ord, nil
 }
 
 // GetOrdersByBranch возвращает все заказы филиала по его ID.
