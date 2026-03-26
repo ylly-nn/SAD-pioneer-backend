@@ -394,6 +394,59 @@ func (h *Handler) AddNewBranchToCompany(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
+// AddServiceToBranch обрабатывает POST /company/branch/service
+func (h *Handler) AddServiceToBranch(w http.ResponseWriter, r *http.Request) {
+	// Получение claims
+	claims, ok := r.Context().Value("user").(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Извлечение email из claims
+	userEmail, ok := claims["email"].(string)
+	if !ok || userEmail == "" {
+		http.Error(w, "Invalid token: email not found", http.StatusUnauthorized)
+		return
+	}
+
+	var req AddServiceToBranch
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := middleware.ValidateStruct(req); err != nil {
+		middleware.SendValidationError(w, err)
+		return
+	}
+
+	// Добавление услуги в филиал
+	err := h.company.AddServiceToBranch(userEmail, req.BranchID, req.ServiceID)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrUserNotPartner):
+			http.Error(w, "User does not have a company", http.StatusForbidden)
+		case errors.Is(err, ErrCompanyNotFound):
+			http.Error(w, "Company not found", http.StatusNotFound)
+		case errors.Is(err, ErrBranchNotInCompany):
+			http.Error(w, "User does not have access to the branch", http.StatusForbidden)
+		case err.Error() == "service already exists in this branch":
+			http.Error(w, "Service already exists in this branch", http.StatusConflict)
+		default:
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message":    "Service added to branch successfully",
+		"branch_id":  req.BranchID,
+		"service_id": req.ServiceID,
+	})
+}
+
 // GetCompanyOrders обрабатывает GET /company/orders
 func (h *Handler) GetCompanyOrders(w http.ResponseWriter, r *http.Request) {
 	// Получаем claims из контекста

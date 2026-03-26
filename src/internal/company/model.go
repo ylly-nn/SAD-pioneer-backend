@@ -106,6 +106,12 @@ type AddBranchRequest struct {
 	CloseTime timeparsing.TimeOnly `json:"close_time" validate:"required"`
 }
 
+// AddServiceToBranch - запрос на добавление новой услуги в филиал
+type AddServiceToBranch struct {
+	BranchID  uuid.UUID `json:"branch_id" validate:"required"`
+	ServiceID uuid.UUID `json:"service_id" validate:"required"`
+}
+
 type CompanyBranchOrderResponse struct {
 	BranchID uuid.UUID `json:"branch_id"`
 	City     string    `json:"city"`
@@ -135,4 +141,9 @@ type AddServDetailRequest struct {
 type DeleteServDetailRequest struct {
 	BranchServID uuid.UUID `json:"branchserv_id" validate:"required"`
 	Detail       string    `json:"detail" validate:"required,min=1,max=255"`
+}
+
+type Service struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
 }

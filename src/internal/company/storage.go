@@ -62,6 +62,12 @@ type CompanyStorage interface {
 
 	CheckBranchAddressExists(inn_company, address, city string) (bool, error)
 
+	AddServiceToBranch(branch_id, service_id uuid.UUID) error
+
+	CheckServiceInBranchExists(branch_id, service_id uuid.UUID) (bool, error)
+
+	GetServiceByID(id uuid.UUID) (*Service, error)
+
 	GetOrdersByBranch(branchID uuid.UUID) ([]*CompanyOrder, error)
 
 	UpdateOrderStatus(orderID uuid.UUID, status OrderStatus) (*CompanyOrder, error)
@@ -543,4 +549,49 @@ func (s *PostgresCompanyStorage) CheckBranchAddressExists(inn_company, address, 
 	}
 
 	return exists, nil
+}
+
+// GetServiceByID получает услугу по ID
+func (s *PostgresCompanyStorage) GetServiceByID(id uuid.UUID) (*Service, error) {
+	var service Service
+	query := `SELECT id, name FROM services WHERE id = $1`
+
+	err := s.DB.QueryRow(query, id).Scan(&service.ID, &service.Name)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get service: %w", err)
+	}
+
+	return &service, nil
+}
+
+// CheckServiceInBranchExists проверяет, есть ли уже услуга в филиале
+func (s *PostgresCompanyStorage) CheckServiceInBranchExists(branch_id, service_id uuid.UUID) (bool, error) {
+	var exists bool
+	query := `SELECT EXISTS(SELECT 1 FROM branch_services WHERE branch = $1 AND service = $2)`
+
+	err := s.DB.QueryRow(query, branch_id, service_id).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check service in branch: %w", err)
+	}
+
+	return exists, nil
+}
+
+// AddServiceToBranch добавляет услугу в филиал
+func (s *PostgresCompanyStorage) AddServiceToBranch(branch_id, service_id uuid.UUID) error {
+	query := `INSERT INTO branch_services (branch, service) VALUES ($1, $2)`
+
+	_, err := s.DB.Exec(query, branch_id, service_id)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return errors.New("service already exists in this branch")
+		}
+		return fmt.Errorf("failed to add service to branch: %w", err)
+	}
+
+	return nil
 }

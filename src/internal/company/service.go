@@ -402,6 +402,75 @@ func (m *CompanyManager) AddBranchToCompany(userEmail, cityName, address string,
 	return nil
 }
 
+// AddServiceToBranch добавляет новую услугу в филиал
+func (m *CompanyManager) AddServiceToBranch(userEmail string, branch_id, service_id uuid.UUID) error {
+	// Проверка, что добавляющий пользователь есть в компании
+	userIsPartner, err := m.UserIsPartner(userEmail)
+	if err != nil {
+		return fmt.Errorf("failed to check user email: %w", err)
+	}
+	if !userIsPartner.IsPartner {
+		return ErrUserNotPartner
+	}
+
+	inn := userIsPartner.Inn
+
+	// Проверка, что компания с ИНН существует и пользователь находится в компании
+	if userIsPartner.Inn != inn {
+		return errors.New("user does not have access to this company")
+	}
+
+	company, err := m.storage.GetCompanyByInn(inn)
+	if err != nil {
+		if errors.Is(err, ErrCompanyNotFound) {
+			return ErrCompanyNotFound
+		}
+	}
+	if company == nil {
+		return ErrCompanyNotFound
+	}
+
+	// Проверка, что филиал просто есть
+	branch, err := m.storage.GetBranchByID(branch_id)
+
+	if err != nil {
+		if errors.Is(err, ErrBranchNotFound) {
+			return ErrBranchNotInCompany
+		}
+	}
+
+	// Проверка, что филиал в компании
+	if branch.Inn != inn {
+		return ErrBranchNotInCompany
+	}
+
+	// Проверка, что услуга существует
+	service, err := m.storage.GetServiceByID(service_id)
+	if err != nil {
+		// если услуги нет - 403
+		return ErrBranchNotInCompany
+	}
+	if service == nil {
+		return ErrBranchNotInCompany
+	}
+
+	// Проверка, что услуга уже не добавлена в филиал
+	exists, err := m.storage.CheckServiceInBranchExists(branch_id, service_id)
+	if err != nil {
+		return fmt.Errorf("failed to check service in branch: %w", err)
+	}
+	if exists {
+		return errors.New("service already exists in this branch")
+	}
+
+	// Добавление услуги в филиал
+	if err := m.storage.AddServiceToBranch(branch_id, service_id); err != nil {
+		return fmt.Errorf("failed to add service to branch: %w", err)
+	}
+
+	return nil
+}
+
 // обновляет статус заказа со стороны организации с проверками доступа
 func (m *CompanyManager) UpdateOrderStatus(email string, orderId uuid.UUID, statusStr string) (*CompanyOrder, error) {
 	var status OrderStatus
