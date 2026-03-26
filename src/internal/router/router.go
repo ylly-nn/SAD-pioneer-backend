@@ -43,7 +43,6 @@ func New(authMiddleware *middleware.AuthMiddleware, adminMiddleware *middleware.
 		r.Post("/", companyHandler.CreateCompany)
 		r.Delete("/{inn}", companyHandler.DeleteCompany)
 		r.Get("/order/{inn}", orderHandler.GetCompanyOrders)
-		r.Post("/branch/service", branchHandler.CreateBranchService)
 
 		//Защищёные маршруты
 		r.With(authMiddleware.Authenticate).Get("/", companyHandler.GetCompany)
@@ -52,6 +51,7 @@ func New(authMiddleware *middleware.AuthMiddleware, adminMiddleware *middleware.
 		r.With(authMiddleware.Authenticate).Get("/branch/service/{branchServID}", companyHandler.GetServDetailsByBranchServId)
 		r.With(authMiddleware.Authenticate).Post("/users", companyHandler.AddNewUserToCompany)
 		r.With(authMiddleware.Authenticate).Post("/branch", companyHandler.AddNewBranchToCompany)
+		r.With(authMiddleware.Authenticate).Post("/branch/service", companyHandler.AddServiceToBranch)
 		r.With(authMiddleware.Authenticate).Get("/orders", companyHandler.GetCompanyOrders)
 		r.With(authMiddleware.Authenticate).Put("/order/status", companyHandler.UpdateOrderStatus)
 		r.With(authMiddleware.Authenticate).Post("/branch/service/detail", companyHandler.AddServDetail)
