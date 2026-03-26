@@ -65,6 +65,10 @@ type CompanyStorage interface {
 	GetOrdersByBranch(branchID uuid.UUID) ([]*CompanyOrder, error)
 
 	UpdateOrderStatus(orderID uuid.UUID, status OrderStatus) (*CompanyOrder, error)
+
+	GetServiceDetails(branchServID uuid.UUID) ([]*ServDetails, error)
+
+	UpdateServiceDetails(branchServID uuid.UUID, detils json.RawMessage) error
 }
 
 // PostgresCompanyStorage реализует CompanyStorage для PostgreSQL.
@@ -75,6 +79,75 @@ type PostgresCompanyStorage struct {
 // NewPostgresCompanyStorage создаёт новый экземпляр PostgresCompanyStorage.
 func NewPostgresCompanyStorage(sqlDB *sql.DB) *PostgresCompanyStorage {
 	return &PostgresCompanyStorage{Storage: db.NewStorage(sqlDB)}
+}
+
+// UpdateServiceDetails обновляет JSONB-поле service_detalis для записи branch_services.
+// Если запись не найдена, возвращает ErrBranchServNotFound.
+func (s *PostgresCompanyStorage) UpdateServiceDetails(branchServID uuid.UUID, detils json.RawMessage) error {
+
+	result, err := s.DB.Exec(`
+        UPDATE branch_services
+        SET service_detalis = $1::jsonb
+        WHERE id = $2
+    `, string(detils), branchServID)
+
+	if err != nil {
+		return fmt.Errorf("update service details: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("get rows affected: %w", err)
+	}
+
+	// Если ни одна строка не обновлена – запись не существует
+	if rowsAffected == 0 {
+		return ErrBranchServNotFound
+	}
+
+	return nil
+}
+
+// GetServiceDetails возвращает детали услуги по идентификатору записи branch_services.
+func (s *PostgresCompanyStorage) GetServiceDetails(branchServID uuid.UUID) ([]*ServDetails, error) {
+	var detailsRaw []byte
+
+	err := s.DB.QueryRow(`
+        SELECT service_detalis
+        FROM branch_services
+        WHERE id = $1
+    `, branchServID).Scan(&detailsRaw)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrBranchServNotFound
+		}
+		return nil, fmt.Errorf("query service details: %w", err)
+	}
+
+	if len(detailsRaw) == 0 || string(detailsRaw) == "null" {
+		return []*ServDetails{}, nil
+	}
+
+	var detailsMap map[string]int
+	if err := json.Unmarshal(detailsRaw, &detailsMap); err != nil {
+		return nil, fmt.Errorf("unmarshal service details: %w", err)
+	}
+
+	// Пустой объект {} тоже считаем пустыми деталями
+	if len(detailsMap) == 0 {
+		return []*ServDetails{}, nil
+	}
+
+	result := make([]*ServDetails, 0, len(detailsMap))
+	for detail, duration := range detailsMap {
+		result = append(result, &ServDetails{
+			Detail:   detail,
+			Duration: duration,
+		})
+	}
+
+	return result, nil
 }
 
 // UpdateOrderStatus обновляет статус заказа по его ID и возвращает обновлённый заказ.

@@ -123,3 +123,16 @@ type CompanyOrder struct {
 	Status          OrderStatus `json:"status" example:"create"`
 	OrderDetails    []ServDetails
 }
+
+// Запрос для обработчика для добавления детали
+type AddServDetailRequest struct {
+	BranchServID uuid.UUID `json:"branchserv_id" validate:"required"`
+	Detail       string    `json:"detail" validate:"required,min=3,max=255"`
+	Duration     int       `json:"duration" validate:"required,min=1,max=1439"`
+}
+
+// DeleteServDetailRequest представляет параметры запроса для удаления детали услуги
+type DeleteServDetailRequest struct {
+	BranchServID uuid.UUID `json:"branchserv_id" validate:"required"`
+	Detail       string    `json:"detail" validate:"required,min=1,max=255"`
+}

@@ -475,10 +475,9 @@ func (h *Handler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 3. Вызываем бизнес-логику
 	updatedOrder, err := h.company.UpdateOrderStatus(email, orderID, statusStr)
 	if err != nil {
-		// Обрабатываем известные ошибки
+
 		switch {
 		case errors.Is(err, ErrStatus):
 			http.Error(w, ErrStatus.Error(), http.StatusBadRequest)
@@ -508,5 +507,122 @@ func (h *Handler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(updatedOrder); err != nil {
 		http.Error(w, "failed to encode response", http.StatusInternalServerError)
 		return
+	}
+}
+
+// AddServDetail обрабатывает POST /company/branch/service/detail
+func (h *Handler) AddServDetail(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value("user").(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "unauthorized: missing user claims", http.StatusUnauthorized)
+		return
+	}
+
+	email, ok := claims["email"].(string)
+	if !ok || email == "" {
+		http.Error(w, "unauthorized: email not found in token", http.StatusUnauthorized)
+		return
+	}
+
+	var req AddServDetailRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := middleware.ValidateStruct(req); err != nil {
+		middleware.SendValidationError(w, err)
+		return
+	}
+
+	details := ServDetails{
+		Detail:   req.Detail,
+		Duration: req.Duration,
+	}
+
+	createdDetail, err := h.company.AddServiceDetail(req.BranchServID, email, details)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrUserNotPartner):
+			http.Error(w, "user is not a partner", http.StatusForbidden)
+		case errors.Is(err, ErrBranchServNotFound):
+			http.Error(w, "branch service not available", http.StatusForbidden)
+		case errors.Is(err, ErrBranchNotFound):
+			http.Error(w, "branch service not available", http.StatusForbidden)
+		case errors.Is(err, ErrBranchNotInCompany):
+			http.Error(w, "branch service not available", http.StatusForbidden)
+		case errors.Is(err, ErrBranchServDetailAlreadyExists):
+			http.Error(w, "detail for this service in the branch already exists", http.StatusConflict)
+		case errors.Is(err, ErrInvalidDuration):
+			http.Error(w, "invalid duration", http.StatusBadRequest)
+		default:
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(createdDetail); err != nil {
+		http.Error(w, "failed to encode response", http.StatusInternalServerError)
+	}
+}
+
+// DeleteServDetail обрабатывает DELETE /company/branch/service/detail/{branchServID}
+func (h *Handler) DeleteServDetail(w http.ResponseWriter, r *http.Request) {
+
+	claims, ok := r.Context().Value("user").(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "unauthorized: missing user claims", http.StatusUnauthorized)
+		return
+	}
+
+	email, ok := claims["email"].(string)
+	if !ok || email == "" {
+		http.Error(w, "unauthorized: email not found in token", http.StatusUnauthorized)
+		return
+	}
+
+	branchServIDStr := chi.URLParam(r, "branchServID")
+	if branchServIDStr == "" {
+		http.Error(w, "missing branchServID parameter", http.StatusBadRequest)
+		return
+	}
+
+	branchServID, err := uuid.Parse(branchServIDStr)
+	if err != nil {
+		http.Error(w, "invalid branch service ID format: must be UUID", http.StatusBadRequest)
+		return
+	}
+
+	detailName := r.URL.Query().Get("detail")
+	if detailName == "" {
+		http.Error(w, "missing detail parameter", http.StatusBadRequest)
+		return
+	}
+
+	updatedDetails, err := h.company.DeleteServiceDetail(branchServID, email, detailName)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrUserNotPartner):
+			http.Error(w, "user is not a partner", http.StatusForbidden)
+		case errors.Is(err, ErrBranchServNotFound):
+			http.Error(w, "branch service not available", http.StatusForbidden)
+		case errors.Is(err, ErrBranchNotFound):
+			http.Error(w, "branch service not available", http.StatusForbidden)
+		case errors.Is(err, ErrBranchNotInCompany):
+			http.Error(w, "branch service not available", http.StatusForbidden)
+		case errors.Is(err, ErrDetailNotFound):
+			http.Error(w, "detail not found", http.StatusNotFound)
+		default:
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// 5. Успешный ответ – обновлённый список деталей
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(updatedDetails); err != nil {
+		http.Error(w, "failed to encode response", http.StatusInternalServerError)
 	}
 }

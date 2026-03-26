@@ -15,16 +15,19 @@ import (
 )
 
 var (
-	ErrUserNotPartner         = errors.New("the user does not have a company")
-	ErrBranchNotInCompany     = errors.New("no access to the company that owns the branch")
-	ErrBranchServNotAvailable = errors.New("service in the branch not available to the user")
-	ErrBranchServIsNull       = errors.New("details for service in the branch not found")
-	ErrServiceDetailsInvalid  = errors.New("invalid service details format")
-	ErrEmptyCity              = errors.New("city cannot be empty")
-	ErrInvalidCity            = errors.New("city is not in the list of Russian cities")
-	ErrOrderNotAvailable      = errors.New("order not available to the user")
-	ErrUpdateStatus           = errors.New("status cannstatus cannot be changed to the selected oneot be changed to the selected one")
-	ErrStatus                 = errors.New("status must be approve or reject")
+	ErrUserNotPartner                = errors.New("the user does not have a company")
+	ErrBranchNotInCompany            = errors.New("no access to the company that owns the branch")
+	ErrBranchServNotAvailable        = errors.New("service in the branch not available to the user")
+	ErrBranchServIsNull              = errors.New("details for service in the branch not found")
+	ErrServiceDetailsInvalid         = errors.New("invalid service details format")
+	ErrEmptyCity                     = errors.New("city cannot be empty")
+	ErrInvalidCity                   = errors.New("city is not in the list of Russian cities")
+	ErrOrderNotAvailable             = errors.New("order not available to the user")
+	ErrUpdateStatus                  = errors.New("status cannstatus cannot be changed to the selected oneot be changed to the selected one")
+	ErrStatus                        = errors.New("status must be approve or reject")
+	ErrBranchServDetailAlreadyExists = errors.New("detail for this service in the branch already exists")
+	ErrInvalidDuration               = errors.New("invalid duration")
+	ErrDetailNotFound                = errors.New("detail in branch service not found")
 )
 
 var hyphenSpaces = regexp.MustCompile(`\s*-\s*`)
@@ -470,4 +473,125 @@ func (m *CompanyManager) UpdateOrderStatus(email string, orderId uuid.UUID, stat
 	}
 
 	return updatedOrder, nil
+}
+
+// Добавляет деталь услуги из филиала по названию и длительности
+func (m *CompanyManager) AddServiceDetail(branchServID uuid.UUID, email string, getDetail ServDetails) ([]*ServDetails, error) {
+
+	isPartner, err := m.UserIsPartner(email)
+	if err != nil {
+		return nil, err
+	}
+
+	if isPartner.IsPartner != true {
+		return nil, ErrUserNotPartner
+	}
+
+	branchServ, err := m.storage.GetBranchServByID(branchServID)
+	if err != nil {
+		return nil, err
+	}
+
+	branch, err := m.storage.GetBranchByID(branchServ.Branch)
+	if err != nil {
+		return nil, err
+	}
+
+	if branch.Inn != isPartner.Inn {
+		return nil, ErrBranchNotInCompany
+	}
+
+	dbDetails, err := m.storage.GetServiceDetails(branchServID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for _, existing := range dbDetails {
+		if existing.Detail == getDetail.Detail {
+			return nil, ErrBranchServDetailAlreadyExists
+		}
+	}
+
+	dbDetails = append(dbDetails, &getDetail)
+
+	detailsMap := make(map[string]int, len(dbDetails))
+	for _, d := range dbDetails {
+		detailsMap[d.Detail] = d.Duration
+	}
+
+	jsonRowDetails, err := json.Marshal(detailsMap)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := m.storage.UpdateServiceDetails(branchServID, jsonRowDetails); err != nil {
+		return nil, err
+	}
+
+	return dbDetails, nil
+
+}
+
+// DeleteServiceDetail удаляет деталь услуги из филиала по названию.
+func (m *CompanyManager) DeleteServiceDetail(branchServID uuid.UUID, email string, nameDetail string) ([]*ServDetails, error) {
+
+	isPartner, err := m.UserIsPartner(email)
+	if err != nil {
+		return nil, err
+	}
+
+	if isPartner.IsPartner != true {
+		return nil, ErrUserNotPartner
+	}
+
+	branchServ, err := m.storage.GetBranchServByID(branchServID)
+	if err != nil {
+		return nil, err
+	}
+
+	branch, err := m.storage.GetBranchByID(branchServ.Branch)
+	if err != nil {
+		return nil, err
+	}
+	if branch.Inn != isPartner.Inn {
+		return nil, ErrBranchNotInCompany
+	}
+
+	dbDetails, err := m.storage.GetServiceDetails(branchServID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Ищем индекс удаляемой детали
+	foundIndex := -1
+	for i, d := range dbDetails {
+		if d.Detail == nameDetail {
+			foundIndex = i
+			break
+		}
+	}
+	if foundIndex == -1 {
+		return nil, ErrDetailNotFound
+	}
+
+	// Удалить элемент из слайса (сохраняя порядок)
+	dbDetails = append(dbDetails[:foundIndex], dbDetails[foundIndex+1:]...)
+
+	detailsMap := make(map[string]int, len(dbDetails))
+	for _, d := range dbDetails {
+		detailsMap[d.Detail] = d.Duration
+	}
+
+	//Сериализовать map в JSON
+	jsonRowDetails, err := json.Marshal(detailsMap)
+	if err != nil {
+		return nil, fmt.Errorf("marshal service details: %w", err)
+	}
+
+	if err := m.storage.UpdateServiceDetails(branchServID, jsonRowDetails); err != nil {
+		return nil, fmt.Errorf("update service details: %w", err)
+	}
+
+	return dbDetails, nil
 }
