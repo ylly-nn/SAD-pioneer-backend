@@ -1,5 +1,52 @@
 basePath: /
 definitions:
+  admin.ApprovePartnerRequest:
+    properties:
+      inn:
+        example: "123456789012"
+        type: string
+    required:
+    - inn
+    type: object
+  admin.PartnerRequest:
+    properties:
+      email:
+        example: ivan@example.com
+        type: string
+      info:
+        example: Дополнительная информация
+        type: string
+      inn:
+        example: "123456789012"
+        type: string
+      kpp:
+        example: "123456789"
+        type: string
+      name:
+        example: Иван
+        type: string
+      ogrn:
+        example: "1234567890123"
+        type: string
+      org_name:
+        example: ООО Ромашка
+        type: string
+      org_short_name:
+        example: Ромашка
+        type: string
+      patronymic:
+        example: Иванович
+        type: string
+      phone:
+        example: "9990000000"
+        type: string
+      status:
+        example: new
+        type: string
+      surname:
+        example: Иванов
+        type: string
+    type: object
   auth.LoginRequest:
     properties:
       email:
@@ -101,6 +148,61 @@ definitions:
         example: мОсква
         type: string
     type: object
+  company.AddBranchRequest:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      close_time:
+        type: string
+      open_time:
+        type: string
+    required:
+    - address
+    - city
+    - close_time
+    - open_time
+    type: object
+  company.AddServDetailRequest:
+    properties:
+      branchserv_id:
+        example: 6fdd2352-ffc4-4140-b54c-67657f841c1c
+        type: string
+      detail:
+        example: Мойка салона
+        maxLength: 255
+        minLength: 3
+        type: string
+      duration:
+        example: 40
+        maximum: 1439
+        minimum: 1
+        type: integer
+    required:
+    - branchserv_id
+    - detail
+    - duration
+    type: object
+  company.AddServiceToBranch:
+    properties:
+      branch_id:
+        example: 9eebb3b9-5b35-4007-9d4f-2f4141786b45
+        type: string
+      service_id:
+        example: 03db1f58-2bbd-481c-8d93-b2828871b376
+        type: string
+    required:
+    - branch_id
+    - service_id
+    type: object
+  company.AddUserRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
   company.CompanyBranch:
     properties:
       address:
@@ -180,8 +282,9 @@ definitions:
         example: "2026-04-16T05:00:00Z"
         type: string
       status:
+        allOf:
+        - $ref: '#/definitions/company.OrderStatus'
         example: create
-        type: string
       users:
         example: ex@mail.ru
         type: string
@@ -204,6 +307,24 @@ definitions:
         example: Технопром
         type: string
     type: object
+  company.OrderStatus:
+    enum:
+    - create
+    - approve
+    - reject
+    type: string
+    x-enum-comments:
+      OrderStatusApprove: заказ подтверждён
+      OrderStatusCreate: заказ создан
+      OrderStatusReject: заказ отклонён
+    x-enum-descriptions:
+    - заказ создан
+    - заказ подтверждён
+    - заказ отклонён
+    x-enum-varnames:
+    - OrderStatusCreate
+    - OrderStatusApprove
+    - OrderStatusReject
   company.ServDetails:
     properties:
       detail:
@@ -253,8 +374,9 @@ definitions:
         format: yyyy-mm-ddThh:mm:ss+(Z)hh:mm
         type: string
       status:
+        allOf:
+        - $ref: '#/definitions/order.OrderStatus'
         example: create
-        type: string
     type: object
   order.CreateOrderRequest:
     properties:
@@ -301,10 +423,67 @@ definitions:
         example: "2026-04-16T05:00:00Z"
         type: string
       status:
+        allOf:
+        - $ref: '#/definitions/order.OrderStatus'
         example: create
-        type: string
       users:
         example: ex@mail.ru
+        type: string
+    type: object
+  order.OrderStatus:
+    enum:
+    - create
+    - approve
+    - reject
+    type: string
+    x-enum-comments:
+      OrderStatusApprove: заказ подтверждён
+      OrderStatusCreate: заказ создан
+      OrderStatusReject: заказ отклонён
+    x-enum-descriptions:
+    - заказ создан
+    - заказ подтверждён
+    - заказ отклонён
+    x-enum-varnames:
+    - OrderStatusCreate
+    - OrderStatusApprove
+    - OrderStatusReject
+  partners.PartnerRequestRequest:
+    properties:
+      email:
+        example: ivan@example.com
+        type: string
+      info:
+        example: Дополнительная информация
+        type: string
+      inn:
+        example: "123456789012"
+        type: string
+      kpp:
+        example: "123456789"
+        type: string
+      name:
+        example: Иван
+        type: string
+      ogrn:
+        example: "1234567890123"
+        type: string
+      org_name:
+        example: ООО Ромашка
+        type: string
+      org_short_name:
+        example: Ромашка
+        type: string
+      patronymic:
+        example: Иванович
+        type: string
+      phone:
+        example: "9871111111"
+        type: string
+      status:
+        type: string
+      surname:
+        example: Иванов
         type: string
     type: object
   service.ServiceResponse:
@@ -315,6 +494,33 @@ definitions:
         type: string
       name:
         example: Aвтомойка
+        type: string
+    type: object
+  swagger.AddBranchResponse:
+    properties:
+      address:
+        example: ул. Тверская, 1
+        type: string
+      city:
+        example: Москва
+        type: string
+      close_time:
+        example: 18:00:00+00:00
+        type: string
+      message:
+        example: Branch added to company successfully
+        type: string
+      open_time:
+        example: 10:00:00+00:00
+        type: string
+    type: object
+  swagger.AddUserResponse:
+    properties:
+      email:
+        example: newuser@example.com
+        type: string
+      message:
+        example: User added to company successfully
         type: string
     type: object
   swagger.LogoutRequest:
@@ -358,6 +564,299 @@ info:
   description: API для сервиса  Pioneer.
   title: Pioneer API
 paths:
+  /admin/partner-requests/:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список всех заявок на регистрацию организаций. Доступно
+        только для администраторов.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список заявок (если нет, возвращается null)
+          schema:
+            items:
+              $ref: '#/definitions/admin.PartnerRequest'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "403":
+          description: 'Forbidden: admin access required'
+          schema:
+            type: string
+        "500":
+          description: Failed to get requests
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить все заявки партнёров
+      tags:
+      - admin
+  /admin/partner-requests/approve:
+    post:
+      consumes:
+      - application/json
+      description: Администратор одобряет заявку (статус "pending" -> "approved").
+        Создаётся компания и связывается с пользователем.
+      parameters:
+      - description: INN организации
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/admin.ApprovePartnerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Partner request approved'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request body | validation error | request with inn
+            ... not found | request already processed | failed to create company |
+            failed to create partner user record | failed to update request status
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "403":
+          description: 'Forbidden: admin access required'
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Одобрить заявку партнёра
+      tags:
+      - admin
+  /admin/partner-requests/approved:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список заявок со статусом "approved" (принятые). Доступно
+        только для администраторов.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список принятых заявок (если нет, возвращается null
+          schema:
+            items:
+              $ref: '#/definitions/admin.PartnerRequest'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "403":
+          description: 'Forbidden: admin access required'
+          schema:
+            type: string
+        "500":
+          description: Failed to get requests
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить принятые заявки партнёров
+      tags:
+      - admin
+  /admin/partner-requests/new:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список заявок со статусом "new". Доступно только для
+        администраторов.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список новых заявок (если нет, возвращается null)
+          schema:
+            items:
+              $ref: '#/definitions/admin.PartnerRequest'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "403":
+          description: 'Forbidden: admin access required'
+          schema:
+            type: string
+        "500":
+          description: Failed to get requests
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить новые заявки партнёров
+      tags:
+      - admin
+  /admin/partner-requests/pending:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список заявок со статусом "pending" (в работе). Доступно
+        только для администраторов.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список заявок в работе (если нет, возвращается null)
+          schema:
+            items:
+              $ref: '#/definitions/admin.PartnerRequest'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "403":
+          description: 'Forbidden: admin access required'
+          schema:
+            type: string
+        "500":
+          description: Failed to get requests
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить заявки в работе
+      tags:
+      - admin
+  /admin/partner-requests/reject:
+    post:
+      consumes:
+      - application/json
+      description: Администратор отклоняет заявку (статус "pending" -> "rejected").
+        Требуется указать INN организации.
+      parameters:
+      - description: INN организации
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/admin.ApprovePartnerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Request rejected, inn: ..., status: rejected'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: 'Invalid request body | validation error | request with inn
+            ... not found | request cannot be rejected: current status is ...'
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "403":
+          description: 'Forbidden: admin access required'
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Отклонить заявку партнёра
+      tags:
+      - admin
+  /admin/partner-requests/rejected:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список заявок со статусом "rejected" (отклонённые).
+        Доступно только для администраторов.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список отклонённых заявок (если нет, возвращается null)
+          schema:
+            items:
+              $ref: '#/definitions/admin.PartnerRequest'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "403":
+          description: 'Forbidden: admin access required'
+          schema:
+            type: string
+        "500":
+          description: Failed to get requests
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить отклонённые заявки партнёров
+      tags:
+      - admin
+  /admin/partner-requests/take:
+    post:
+      consumes:
+      - application/json
+      description: Администратор переводит заявку из статуса "new" в "pending". Требуется
+        указать INN организации.
+      parameters:
+      - description: INN организации
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/admin.ApprovePartnerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Request taken to work, inn: ..., status: pending'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: 'Invalid request body | validation error | request with inn
+            ... not found | request cannot be taken to work: current status is ...'
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "403":
+          description: 'Forbidden: admin access required'
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Взять заявку в работу
+      tags:
+      - admin
   /auth/login:
     post:
       consumes:
@@ -753,6 +1252,94 @@ paths:
       summary: Получить компанию пользователя
       tags:
       - company
+  /company/branch:
+    post:
+      consumes:
+      - application/json
+      description: Позволяет партнёру добавить новый филиал в свою компанию. Город
+        должен быть из списка допустимых (нормализуется автоматически), адрес уникален
+        для компании.
+      parameters:
+      - description: Данные нового филиала
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/company.AddBranchRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Филиал успешно добавлен
+          schema:
+            $ref: '#/definitions/swagger.AddBranchResponse'
+        "400":
+          description: Invalid request body | validation error | empty city | invalid
+            city | branch with this address already exists for this company
+          schema:
+            type: string
+        "401":
+          description: 'Unauthorized | Invalid token: email not found'
+          schema:
+            type: string
+        "403":
+          description: User does not have a company
+          schema:
+            type: string
+        "404":
+          description: Company not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Добавить филиал компании
+      tags:
+      - company
+  /company/branch/service:
+    post:
+      consumes:
+      - application/json
+      description: Позволяет партнёру добавить существующую услугу (по ID) в указанный
+        филиал своей компании.
+      parameters:
+      - description: Данные для добавления услуги в филиал
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/company.AddServiceToBranch'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 'message: Service added to branch successfully, branch_id:
+            ..., service_id: ...'
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body | validation error | service already exists
+            in this branch
+          schema:
+            type: string
+        "401":
+          description: 'Unauthorized | Invalid token: email not found'
+          schema:
+            type: string
+        "403":
+          description: User does not have a company | User does not have access to
+            the branch
+          schema:
+            type: string
+        "404":
+          description: Company not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Добавить услугу в филиал
+      tags:
+      - company
   /company/branch/service/{branchServID}:
     get:
       consumes:
@@ -792,6 +1379,107 @@ paths:
       security:
       - BearerAuth: []
       summary: Получить детали услуги филиала
+      tags:
+      - company
+  /company/branch/service/detail:
+    post:
+      consumes:
+      - application/json
+      description: Позволяет партнёру добавить новую деталь (например, "Мойка салона")
+        с длительностью к существующей услуге филиала.
+      parameters:
+      - description: Деталь для добавления
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/company.AddServDetailRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Обновлённый список деталей услуги
+          schema:
+            items:
+              $ref: '#/definitions/company.ServDetails'
+            type: array
+        "400":
+          description: invalid request body | validation error | invalid duration
+          schema:
+            type: string
+        "401":
+          description: 'unauthorized: missing user claims | email not found in token'
+          schema:
+            type: string
+        "403":
+          description: user is not a partner | branch service not available
+          schema:
+            type: string
+        "409":
+          description: detail for this service in the branch already exists
+          schema:
+            type: string
+        "500":
+          description: internal server error | failed to encode response
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Добавить деталь услуги филиала
+      tags:
+      - company
+  /company/branch/service/detail/{branchServID}:
+    delete:
+      consumes:
+      - application/json
+      description: Позволяет партнёру удалить существующую деталь (например, "Мойка
+        салона") из услуги филиала.
+      parameters:
+      - description: UUID записи услуги филиала
+        example: 6fdd2352-ffc4-4140-b54c-67657f841c1c
+        in: path
+        name: branchServID
+        required: true
+        type: string
+      - description: Название детали для удаления
+        example: Мойка салона
+        in: query
+        name: detail
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновлённый список деталей услуги
+          schema:
+            items:
+              $ref: '#/definitions/company.ServDetails'
+            type: array
+        "400":
+          description: 'missing branchServID parameter | invalid branch service ID
+            format: must be UUID | missing detail parameter'
+          schema:
+            type: string
+        "401":
+          description: 'unauthorized: missing user claims | email not found in token'
+          schema:
+            type: string
+        "403":
+          description: user is not a partner | branch service not available
+          schema:
+            type: string
+        "404":
+          description: detail not found
+          schema:
+            type: string
+        "500":
+          description: internal server error | failed to encode response
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Удалить деталь услуги филиала
       tags:
       - company
   /company/branches:
@@ -868,6 +1556,54 @@ paths:
       summary: Получить филиал компании по ID
       tags:
       - company
+  /company/order/status:
+    put:
+      consumes:
+      - application/json
+      description: Позволяет партнёру подтвердить (approve) или отклонить (reject)
+        заказ, связанный с его компанией. Доступно только для авторизованных партнёров.
+      parameters:
+      - description: UUID заказа
+        example: e77fd339-9478-4375-82c1-215936a68b8a
+        in: query
+        name: orderID
+        required: true
+        type: string
+      - description: 'Новый статус: approve или reject'
+        example: approve
+        in: query
+        name: status
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновлённый заказ
+          schema:
+            $ref: '#/definitions/company.CompanyOrder'
+        "400":
+          description: 'missing orderID parameter | missing status parameter | invalid
+            orderID format: must be UUID | invalid status parameter'
+          schema:
+            type: string
+        "401":
+          description: 'unauthorized: missing user claims | email not found in token'
+          schema:
+            type: string
+        "403":
+          description: user is not a partner | order not available
+          schema:
+            type: string
+        "500":
+          description: internal server error | failed to encode response
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Обновить статус заказа
+      tags:
+      - company
   /company/orders:
     get:
       consumes:
@@ -898,6 +1634,48 @@ paths:
       security:
       - BearerAuth: []
       summary: Получить заказы компании
+      tags:
+      - company
+  /company/users:
+    post:
+      consumes:
+      - application/json
+      description: Позволяет партнёру добавить нового пользователя в свою компанию.
+        Новый пользователь должен существовать в системе и ещё не быть партнёром.
+      parameters:
+      - description: Email нового пользователя
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/company.AddUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Пользователь успешно добавлен
+          schema:
+            $ref: '#/definitions/swagger.AddUserResponse'
+        "400":
+          description: Invalid request body | validation error | user not found |
+            user is already a partner
+          schema:
+            type: string
+        "401":
+          description: 'Unauthorized | Invalid token: email not found'
+          schema:
+            type: string
+        "403":
+          description: User does not have a company
+          schema:
+            type: string
+        "404":
+          description: Company not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Добавить пользователя в компанию
       tags:
       - company
   /order:
@@ -936,6 +1714,67 @@ paths:
       summary: Создать заказ
       tags:
       - order
+  /partner/request:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает статус заявки на регистрацию организации для текущего
+        авторизованного пользователя.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Статус заявки
+          schema:
+            $ref: '#/definitions/partners.PartnerRequestRequest'
+        "401":
+          description: 'Unauthorized | Invalid token: email not found'
+          schema:
+            type: string
+        "404":
+          description: 'no request found for user: <email>'
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить статус заявки партнёра
+      tags:
+      - partners
+    post:
+      consumes:
+      - application/json
+      description: Позволяет авторизованному пользователю подать заявку на регистрацию
+        организации. Проверяет, что компания с таким ИНН ещё не существует в системе.
+      parameters:
+      - description: Данные заявки
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/partners.PartnerRequestRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 'message: Partner request created successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request body | validation error | user not found |
+            company with this INN already exists
+          schema:
+            type: string
+        "401":
+          description: 'Unauthorized | Invalid token: email not found'
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Создать заявку партнёра
+      tags:
+      - partners
   /services:
     get:
       description: Возвращает список общих услуг и их ID

@@ -15,6 +15,449 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/partner-requests/": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает список всех заявок на регистрацию организаций. Доступно только для администраторов.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Получить все заявки партнёров",
+                "responses": {
+                    "200": {
+                        "description": "Список заявок (если нет, возвращается null)",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/admin.PartnerRequest"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: admin access required",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to get requests",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner-requests/approve": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Администратор одобряет заявку (статус \"pending\" -\u003e \"approved\"). Создаётся компания и связывается с пользователем.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Одобрить заявку партнёра",
+                "parameters": [
+                    {
+                        "description": "INN организации",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/admin.ApprovePartnerRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message: Partner request approved",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body | validation error | request with inn ... not found | request already processed | failed to create company | failed to create partner user record | failed to update request status",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: admin access required",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner-requests/approved": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает список заявок со статусом \"approved\" (принятые). Доступно только для администраторов.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Получить принятые заявки партнёров",
+                "responses": {
+                    "200": {
+                        "description": "Список принятых заявок (если нет, возвращается null",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/admin.PartnerRequest"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: admin access required",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to get requests",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner-requests/new": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает список заявок со статусом \"new\". Доступно только для администраторов.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Получить новые заявки партнёров",
+                "responses": {
+                    "200": {
+                        "description": "Список новых заявок (если нет, возвращается null)",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/admin.PartnerRequest"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: admin access required",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to get requests",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner-requests/pending": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает список заявок со статусом \"pending\" (в работе). Доступно только для администраторов.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Получить заявки в работе",
+                "responses": {
+                    "200": {
+                        "description": "Список заявок в работе (если нет, возвращается null)",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/admin.PartnerRequest"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: admin access required",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to get requests",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner-requests/reject": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Администратор отклоняет заявку (статус \"pending\" -\u003e \"rejected\"). Требуется указать INN организации.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Отклонить заявку партнёра",
+                "parameters": [
+                    {
+                        "description": "INN организации",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/admin.ApprovePartnerRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message: Request rejected, inn: ..., status: rejected",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body | validation error | request with inn ... not found | request cannot be rejected: current status is ...",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: admin access required",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner-requests/rejected": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает список заявок со статусом \"rejected\" (отклонённые). Доступно только для администраторов.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Получить отклонённые заявки партнёров",
+                "responses": {
+                    "200": {
+                        "description": "Список отклонённых заявок (если нет, возвращается null)",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/admin.PartnerRequest"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: admin access required",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to get requests",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner-requests/take": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Администратор переводит заявку из статуса \"new\" в \"pending\". Требуется указать INN организации.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Взять заявку в работу",
+                "parameters": [
+                    {
+                        "description": "INN организации",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/admin.ApprovePartnerRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message: Request taken to work, inn: ..., status: pending",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body | validation error | request with inn ... not found | request cannot be taken to work: current status is ...",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: admin access required",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Аутентифицирует пользователя по email и паролю, возвращает access и refresh токены",
@@ -619,6 +1062,284 @@ const docTemplate = `{
                 }
             }
         },
+        "/company/branch": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Позволяет партнёру добавить новый филиал в свою компанию. Город должен быть из списка допустимых (нормализуется автоматически), адрес уникален для компании.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "company"
+                ],
+                "summary": "Добавить филиал компании",
+                "parameters": [
+                    {
+                        "description": "Данные нового филиала",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/company.AddBranchRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Филиал успешно добавлен",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.AddBranchResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body | validation error | empty city | invalid city | branch with this address already exists for this company",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized | Invalid token: email not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "User does not have a company",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Company not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/company/branch/service": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Позволяет партнёру добавить существующую услугу (по ID) в указанный филиал своей компании.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "company"
+                ],
+                "summary": "Добавить услугу в филиал",
+                "parameters": [
+                    {
+                        "description": "Данные для добавления услуги в филиал",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/company.AddServiceToBranch"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "message: Service added to branch successfully, branch_id: ..., service_id: ...",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body | validation error | service already exists in this branch",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized | Invalid token: email not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "User does not have a company | User does not have access to the branch",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Company not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/company/branch/service/detail": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Позволяет партнёру добавить новую деталь (например, \"Мойка салона\") с длительностью к существующей услуге филиала.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "company"
+                ],
+                "summary": "Добавить деталь услуги филиала",
+                "parameters": [
+                    {
+                        "description": "Деталь для добавления",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/company.AddServDetailRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Обновлённый список деталей услуги",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/company.ServDetails"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "invalid request body | validation error | invalid duration",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized: missing user claims | email not found in token",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "user is not a partner | branch service not available",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "409": {
+                        "description": "detail for this service in the branch already exists",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error | failed to encode response",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/company/branch/service/detail/{branchServID}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Позволяет партнёру удалить существующую деталь (например, \"Мойка салона\") из услуги филиала.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "company"
+                ],
+                "summary": "Удалить деталь услуги филиала",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "6fdd2352-ffc4-4140-b54c-67657f841c1c",
+                        "description": "UUID записи услуги филиала",
+                        "name": "branchServID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "Мойка салона",
+                        "description": "Название детали для удаления",
+                        "name": "detail",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Обновлённый список деталей услуги",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/company.ServDetails"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "missing branchServID parameter | invalid branch service ID format: must be UUID | missing detail parameter",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized: missing user claims | email not found in token",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "user is not a partner | branch service not available",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "detail not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error | failed to encode response",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/company/branch/service/{branchServID}": {
             "get": {
                 "security": [
@@ -792,6 +1513,76 @@ const docTemplate = `{
                 }
             }
         },
+        "/company/order/status": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Позволяет партнёру подтвердить (approve) или отклонить (reject) заказ, связанный с его компанией. Доступно только для авторизованных партнёров.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "company"
+                ],
+                "summary": "Обновить статус заказа",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "e77fd339-9478-4375-82c1-215936a68b8a",
+                        "description": "UUID заказа",
+                        "name": "orderID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "approve",
+                        "description": "Новый статус: approve или reject",
+                        "name": "status",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Обновлённый заказ",
+                        "schema": {
+                            "$ref": "#/definitions/company.CompanyOrder"
+                        }
+                    },
+                    "400": {
+                        "description": "missing orderID parameter | missing status parameter | invalid orderID format: must be UUID | invalid status parameter",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized: missing user claims | email not found in token",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "user is not a partner | order not available",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error | failed to encode response",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/company/orders": {
             "get": {
                 "security": [
@@ -834,6 +1625,69 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "internal server error или failed to encode response",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/company/users": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Позволяет партнёру добавить нового пользователя в свою компанию. Новый пользователь должен существовать в системе и ещё не быть партнёром.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "company"
+                ],
+                "summary": "Добавить пользователя в компанию",
+                "parameters": [
+                    {
+                        "description": "Email нового пользователя",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/company.AddUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Пользователь успешно добавлен",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.AddUserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body | validation error | user not found | user is already a partner",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized | Invalid token: email not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "User does not have a company",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Company not found",
                         "schema": {
                             "type": "string"
                         }
@@ -898,6 +1752,98 @@ const docTemplate = `{
                 }
             }
         },
+        "/partner/request": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает статус заявки на регистрацию организации для текущего авторизованного пользователя.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "partners"
+                ],
+                "summary": "Получить статус заявки партнёра",
+                "responses": {
+                    "200": {
+                        "description": "Статус заявки",
+                        "schema": {
+                            "$ref": "#/definitions/partners.PartnerRequestRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized | Invalid token: email not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "no request found for user: \u003cemail\u003e",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Позволяет авторизованному пользователю подать заявку на регистрацию организации. Проверяет, что компания с таким ИНН ещё не существует в системе.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "partners"
+                ],
+                "summary": "Создать заявку партнёра",
+                "parameters": [
+                    {
+                        "description": "Данные заявки",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/partners.PartnerRequestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "message: Partner request created successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body | validation error | user not found | company with this INN already exists",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized | Invalid token: email not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/services": {
             "get": {
                 "security": [
@@ -940,6 +1886,71 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "admin.ApprovePartnerRequest": {
+            "type": "object",
+            "required": [
+                "inn"
+            ],
+            "properties": {
+                "inn": {
+                    "type": "string",
+                    "example": "123456789012"
+                }
+            }
+        },
+        "admin.PartnerRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "ivan@example.com"
+                },
+                "info": {
+                    "type": "string",
+                    "example": "Дополнительная информация"
+                },
+                "inn": {
+                    "type": "string",
+                    "example": "123456789012"
+                },
+                "kpp": {
+                    "type": "string",
+                    "example": "123456789"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Иван"
+                },
+                "ogrn": {
+                    "type": "string",
+                    "example": "1234567890123"
+                },
+                "org_name": {
+                    "type": "string",
+                    "example": "ООО Ромашка"
+                },
+                "org_short_name": {
+                    "type": "string",
+                    "example": "Ромашка"
+                },
+                "patronymic": {
+                    "type": "string",
+                    "example": "Иванович"
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "9990000000"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "new"
+                },
+                "surname": {
+                    "type": "string",
+                    "example": "Иванов"
+                }
+            }
+        },
         "auth.LoginRequest": {
             "type": "object",
             "required": [
@@ -1082,6 +2093,83 @@ const docTemplate = `{
                 }
             }
         },
+        "company.AddBranchRequest": {
+            "type": "object",
+            "required": [
+                "address",
+                "city",
+                "close_time",
+                "open_time"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "close_time": {
+                    "type": "string"
+                },
+                "open_time": {
+                    "type": "string"
+                }
+            }
+        },
+        "company.AddServDetailRequest": {
+            "type": "object",
+            "required": [
+                "branchserv_id",
+                "detail",
+                "duration"
+            ],
+            "properties": {
+                "branchserv_id": {
+                    "type": "string",
+                    "example": "6fdd2352-ffc4-4140-b54c-67657f841c1c"
+                },
+                "detail": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 3,
+                    "example": "Мойка салона"
+                },
+                "duration": {
+                    "type": "integer",
+                    "maximum": 1439,
+                    "minimum": 1,
+                    "example": 40
+                }
+            }
+        },
+        "company.AddServiceToBranch": {
+            "type": "object",
+            "required": [
+                "branch_id",
+                "service_id"
+            ],
+            "properties": {
+                "branch_id": {
+                    "type": "string",
+                    "example": "9eebb3b9-5b35-4007-9d4f-2f4141786b45"
+                },
+                "service_id": {
+                    "type": "string",
+                    "example": "03db1f58-2bbd-481c-8d93-b2828871b376"
+                }
+            }
+        },
+        "company.AddUserRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
         "company.CompanyBranch": {
             "type": "object",
             "properties": {
@@ -1192,7 +2280,11 @@ const docTemplate = `{
                     "example": "2026-04-16T05:00:00Z"
                 },
                 "status": {
-                    "type": "string",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/company.OrderStatus"
+                        }
+                    ],
                     "example": "create"
                 },
                 "users": {
@@ -1225,6 +2317,29 @@ const docTemplate = `{
                     "example": "Технопром"
                 }
             }
+        },
+        "company.OrderStatus": {
+            "type": "string",
+            "enum": [
+                "create",
+                "approve",
+                "reject"
+            ],
+            "x-enum-comments": {
+                "OrderStatusApprove": "заказ подтверждён",
+                "OrderStatusCreate": "заказ создан",
+                "OrderStatusReject": "заказ отклонён"
+            },
+            "x-enum-descriptions": [
+                "заказ создан",
+                "заказ подтверждён",
+                "заказ отклонён"
+            ],
+            "x-enum-varnames": [
+                "OrderStatusCreate",
+                "OrderStatusApprove",
+                "OrderStatusReject"
+            ]
         },
         "company.ServDetails": {
             "type": "object",
@@ -1293,7 +2408,11 @@ const docTemplate = `{
                     "example": "2026-03-16T09:30:00+04:00"
                 },
                 "status": {
-                    "type": "string",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/order.OrderStatus"
+                        }
+                    ],
                     "example": "create"
                 }
             }
@@ -1360,12 +2479,91 @@ const docTemplate = `{
                     "example": "2026-04-16T05:00:00Z"
                 },
                 "status": {
-                    "type": "string",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/order.OrderStatus"
+                        }
+                    ],
                     "example": "create"
                 },
                 "users": {
                     "type": "string",
                     "example": "ex@mail.ru"
+                }
+            }
+        },
+        "order.OrderStatus": {
+            "type": "string",
+            "enum": [
+                "create",
+                "approve",
+                "reject"
+            ],
+            "x-enum-comments": {
+                "OrderStatusApprove": "заказ подтверждён",
+                "OrderStatusCreate": "заказ создан",
+                "OrderStatusReject": "заказ отклонён"
+            },
+            "x-enum-descriptions": [
+                "заказ создан",
+                "заказ подтверждён",
+                "заказ отклонён"
+            ],
+            "x-enum-varnames": [
+                "OrderStatusCreate",
+                "OrderStatusApprove",
+                "OrderStatusReject"
+            ]
+        },
+        "partners.PartnerRequestRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "ivan@example.com"
+                },
+                "info": {
+                    "type": "string",
+                    "example": "Дополнительная информация"
+                },
+                "inn": {
+                    "type": "string",
+                    "example": "123456789012"
+                },
+                "kpp": {
+                    "type": "string",
+                    "example": "123456789"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Иван"
+                },
+                "ogrn": {
+                    "type": "string",
+                    "example": "1234567890123"
+                },
+                "org_name": {
+                    "type": "string",
+                    "example": "ООО Ромашка"
+                },
+                "org_short_name": {
+                    "type": "string",
+                    "example": "Ромашка"
+                },
+                "patronymic": {
+                    "type": "string",
+                    "example": "Иванович"
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "9871111111"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "surname": {
+                    "type": "string",
+                    "example": "Иванов"
                 }
             }
         },
@@ -1380,6 +2578,44 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "Aвтомойка"
+                }
+            }
+        },
+        "swagger.AddBranchResponse": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "example": "ул. Тверская, 1"
+                },
+                "city": {
+                    "type": "string",
+                    "example": "Москва"
+                },
+                "close_time": {
+                    "type": "string",
+                    "example": "18:00:00+00:00"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Branch added to company successfully"
+                },
+                "open_time": {
+                    "type": "string",
+                    "example": "10:00:00+00:00"
+                }
+            }
+        },
+        "swagger.AddUserResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "newuser@example.com"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "User added to company successfully"
                 }
             }
         },

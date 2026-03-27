@@ -108,8 +108,8 @@ type AddBranchRequest struct {
 
 // AddServiceToBranch - запрос на добавление новой услуги в филиал
 type AddServiceToBranch struct {
-	BranchID  uuid.UUID `json:"branch_id" validate:"required"`
-	ServiceID uuid.UUID `json:"service_id" validate:"required"`
+	BranchID  uuid.UUID `json:"branch_id"  example:"9eebb3b9-5b35-4007-9d4f-2f4141786b45" validate:"required"`
+	ServiceID uuid.UUID `json:"service_id" example:"03db1f58-2bbd-481c-8d93-b2828871b376" validate:"required"`
 }
 
 type CompanyBranchOrderResponse struct {
@@ -132,15 +132,9 @@ type CompanyOrder struct {
 
 // Запрос для обработчика для добавления детали
 type AddServDetailRequest struct {
-	BranchServID uuid.UUID `json:"branchserv_id" validate:"required"`
-	Detail       string    `json:"detail" validate:"required,min=3,max=255"`
-	Duration     int       `json:"duration" validate:"required,min=1,max=1439"`
-}
-
-// DeleteServDetailRequest представляет параметры запроса для удаления детали услуги
-type DeleteServDetailRequest struct {
-	BranchServID uuid.UUID `json:"branchserv_id" validate:"required"`
-	Detail       string    `json:"detail" validate:"required,min=1,max=255"`
+	BranchServID uuid.UUID `json:"branchserv_id" validate:"required" example:"6fdd2352-ffc4-4140-b54c-67657f841c1c"`
+	Detail       string    `json:"detail" validate:"required,min=3,max=255" example:"Мойка салона"`
+	Duration     int       `json:"duration" validate:"required,min=1,max=1439" example:"40"`
 }
 
 type Service struct {
