@@ -545,7 +545,7 @@ func (m *CompanyManager) UpdateOrderStatus(email string, orderId uuid.UUID, stat
 }
 
 // Добавляет деталь услуги из филиала по названию и длительности
-func (m *CompanyManager) AddServiceDetail(branchServID uuid.UUID, email string, getDetail ServDetails) ([]*ServDetails, error) {
+func (m *CompanyManager) AddServiceDetail(branchServID uuid.UUID, email string, getDetail ServDetails, getPrices ServPrice) ([]*ServUpdateResponse, error) {
 
 	isPartner, err := m.UserIsPartner(email)
 	if err != nil {
@@ -570,7 +570,7 @@ func (m *CompanyManager) AddServiceDetail(branchServID uuid.UUID, email string, 
 		return nil, ErrBranchNotInCompany
 	}
 
-	dbDetails, err := m.storage.GetServiceDetails(branchServID)
+	dbDetails, dbPrice, err := m.storage.GetServiceDetailsAndPrice(branchServID)
 
 	if err != nil {
 		return nil, err
@@ -583,6 +583,7 @@ func (m *CompanyManager) AddServiceDetail(branchServID uuid.UUID, email string, 
 	}
 
 	dbDetails = append(dbDetails, &getDetail)
+	dbPrice = append(dbPrice, &getPrices)
 
 	detailsMap := make(map[string]int, len(dbDetails))
 	for _, d := range dbDetails {
@@ -594,16 +595,38 @@ func (m *CompanyManager) AddServiceDetail(branchServID uuid.UUID, email string, 
 		return nil, err
 	}
 
-	if err := m.storage.UpdateServiceDetails(branchServID, jsonRowDetails); err != nil {
+	priceMap := make(map[string]float64, len(dbPrice))
+	for _, p := range dbPrice {
+		// p.Price имеет тип float32, приводим к float64 для безопасного JSON
+		priceMap[p.Detail] = float64(p.Price)
+	}
+	jsonRowPrices, err := json.Marshal(priceMap)
+	if err != nil {
 		return nil, err
 	}
 
-	return dbDetails, nil
+	if err := m.storage.UpdateServiceDetails(branchServID, jsonRowDetails, jsonRowPrices); err != nil {
+		return nil, err
+	}
+
+	response := make([]*ServUpdateResponse, 0, len(dbDetails))
+	for _, d := range dbDetails {
+		priceVal, ok := priceMap[d.Detail]
+		if !ok {
+			return nil, fmt.Errorf("price not found for detail %s", d.Detail)
+		}
+		response = append(response, &ServUpdateResponse{
+			Detail:   d.Detail,
+			Duration: d.Duration,
+			Price:    float32(priceVal),
+		})
+	}
+	return response, nil
 
 }
 
 // DeleteServiceDetail удаляет деталь услуги из филиала по названию.
-func (m *CompanyManager) DeleteServiceDetail(branchServID uuid.UUID, email string, nameDetail string) ([]*ServDetails, error) {
+func (m *CompanyManager) DeleteServiceDetail(branchServID uuid.UUID, email string, nameDetail string) ([]*ServUpdateResponse, error) {
 
 	isPartner, err := m.UserIsPartner(email)
 	if err != nil {
@@ -627,7 +650,7 @@ func (m *CompanyManager) DeleteServiceDetail(branchServID uuid.UUID, email strin
 		return nil, ErrBranchNotInCompany
 	}
 
-	dbDetails, err := m.storage.GetServiceDetails(branchServID)
+	dbDetails, dbPrice, err := m.storage.GetServiceDetailsAndPrice(branchServID)
 	if err != nil {
 		return nil, err
 	}
@@ -647,6 +670,20 @@ func (m *CompanyManager) DeleteServiceDetail(branchServID uuid.UUID, email strin
 	// Удалить элемент из слайса (сохраняя порядок)
 	dbDetails = append(dbDetails[:foundIndex], dbDetails[foundIndex+1:]...)
 
+	priceIndex := -1
+	for i, p := range dbPrice {
+		if p.Detail == nameDetail {
+			priceIndex = i
+			break
+		}
+	}
+
+	if priceIndex == -1 {
+		return nil, fmt.Errorf("price not found for detail %s", nameDetail)
+	}
+
+	dbPrice = append(dbPrice[:priceIndex], dbPrice[priceIndex+1:]...)
+
 	detailsMap := make(map[string]int, len(dbDetails))
 	for _, d := range dbDetails {
 		detailsMap[d.Detail] = d.Duration
@@ -658,9 +695,31 @@ func (m *CompanyManager) DeleteServiceDetail(branchServID uuid.UUID, email strin
 		return nil, fmt.Errorf("marshal service details: %w", err)
 	}
 
-	if err := m.storage.UpdateServiceDetails(branchServID, jsonRowDetails); err != nil {
-		return nil, fmt.Errorf("update service details: %w", err)
+	priceMap := make(map[string]float64, len(dbPrice))
+	for _, p := range dbPrice {
+		priceMap[p.Detail] = float64(p.Price)
+	}
+	jsonRowPrices, err := json.Marshal(priceMap)
+	if err != nil {
+		return nil, fmt.Errorf("marshal price: %w", err)
 	}
 
-	return dbDetails, nil
+	if err := m.storage.UpdateServiceDetails(branchServID, jsonRowDetails, jsonRowPrices); err != nil {
+		return nil, err
+	}
+
+	response := make([]*ServUpdateResponse, 0, len(dbDetails))
+	for _, d := range dbDetails {
+		priceVal, ok := priceMap[d.Detail]
+		if !ok {
+			return nil, fmt.Errorf("price not found for detail %s", d.Detail)
+		}
+		response = append(response, &ServUpdateResponse{
+			Detail:   d.Detail,
+			Duration: d.Duration,
+			Price:    float32(priceVal),
+		})
+	}
+
+	return response, nil
 }

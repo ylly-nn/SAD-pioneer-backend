@@ -173,7 +173,7 @@ func addNewBranchToCompany() {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        request  body      company.AddServDetailRequest  true  "Деталь для добавления"
-// @Success      201      {array}   company.ServDetails  "Обновлённый список деталей услуги"
+// @Success      201      {array}   company.ServUpdateResponse  "Обновлённый список деталей услуги"
 // @Failure      400      {string}  string  "invalid request body | validation error | invalid duration"
 // @Failure      401      {string}  string  "unauthorized: missing user claims | email not found in token"
 // @Failure      403      {string}  string  "user is not a partner | branch service not available"
@@ -182,7 +182,7 @@ func addNewBranchToCompany() {
 // @Router       /company/branch/service/detail [post]
 func addServDetail() {
 	var _ = company.AddServDetailRequest{}
-	var _ = company.ServDetails{}
+	var _ = company.ServUpdateResponse{}
 }
 
 // deleteServDetail удаляет деталь услуги филиала
@@ -194,7 +194,7 @@ func addServDetail() {
 // @Security     BearerAuth
 // @Param        branchServID  path      string  true  "UUID записи услуги филиала"  example(6fdd2352-ffc4-4140-b54c-67657f841c1c)
 // @Param        detail        query     string  true  "Название детали для удаления"  example(Мойка салона)
-// @Success      200           {array}   company.ServDetails  "Обновлённый список деталей услуги"
+// @Success      200           {array}   company.ServUpdateResponse "Обновлённый список деталей услуги"
 // @Failure      400           {string}  string  "missing branchServID parameter | invalid branch service ID format: must be UUID | missing detail parameter"
 // @Failure      401           {string}  string  "unauthorized: missing user claims | email not found in token"
 // @Failure      403           {string}  string  "user is not a partner | branch service not available"
@@ -202,7 +202,7 @@ func addServDetail() {
 // @Failure      500           {string}  string  "internal server error | failed to encode response"
 // @Router       /company/branch/service/detail/{branchServID} [delete]
 func deleteServDetail() {
-	var _ = company.ServDetails{}
+	var _ = company.ServUpdateResponse{}
 }
 
 // getPartnerRequestStatus возвращает статус заявки на регистрацию партнёра

@@ -85,6 +85,11 @@ type ServDetails struct {
 	Duration int    `json:"duration_min" example:"40"`
 }
 
+type ServPrice struct {
+	Detail string  `json:"detail" example:"Мойка салона"`
+	Price  float32 `json:"price" example:"560.12"`
+}
+
 // соответствует таблице branch_serv
 type BranchServ struct {
 	ID             uuid.UUID       `json:"id"`
@@ -135,9 +140,16 @@ type AddServDetailRequest struct {
 	BranchServID uuid.UUID `json:"branchserv_id" validate:"required" example:"6fdd2352-ffc4-4140-b54c-67657f841c1c"`
 	Detail       string    `json:"detail" validate:"required,min=3,max=255" example:"Мойка салона"`
 	Duration     int       `json:"duration" validate:"required,min=1,max=1439" example:"40"`
+	Price        *float32  `json:"price" example:"700.50" validate:"required,gt=0,lt=1000000000000"`
 }
 
 type Service struct {
 	ID   uuid.UUID `json:"id"`
 	Name string    `json:"name"`
+}
+
+type ServUpdateResponse struct {
+	Detail   string  `json:"detail" example:"Мойка салона"`
+	Duration int     `json:"duration_min" example:"40"`
+	Price    float32 `json:"price" example:"560.12"`
 }

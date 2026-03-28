@@ -1216,7 +1216,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/company.ServDetails"
+                                "$ref": "#/definitions/company.ServUpdateResponse"
                             }
                         }
                     },
@@ -1295,7 +1295,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/company.ServDetails"
+                                "$ref": "#/definitions/company.ServUpdateResponse"
                             }
                         }
                     },
@@ -1881,12 +1881,11 @@
         "admin.ApprovePartnerRequest": {
             "type": "object",
             "required": [
-                "inn"
+                "id"
             ],
             "properties": {
-                "inn": {
-                    "type": "string",
-                    "example": "123456789012"
+                "id": {
+                    "type": "string"
                 }
             }
         },
@@ -1896,6 +1895,9 @@
                 "email": {
                     "type": "string",
                     "example": "ivan@example.com"
+                },
+                "id": {
+                    "type": "string"
                 },
                 "info": {
                     "type": "string",
@@ -1940,6 +1942,10 @@
                 "surname": {
                     "type": "string",
                     "example": "Иванов"
+                },
+                "user_email": {
+                    "type": "string",
+                    "example": "email@mail.ru"
                 }
             }
         },
@@ -2113,7 +2119,8 @@
             "required": [
                 "branchserv_id",
                 "detail",
-                "duration"
+                "duration",
+                "price"
             ],
             "properties": {
                 "branchserv_id": {
@@ -2131,6 +2138,10 @@
                     "maximum": 1439,
                     "minimum": 1,
                     "example": 40
+                },
+                "price": {
+                    "type": "number",
+                    "example": 700.5
                 }
             }
         },
@@ -2343,6 +2354,23 @@
                 "duration_min": {
                     "type": "integer",
                     "example": 40
+                }
+            }
+        },
+        "company.ServUpdateResponse": {
+            "type": "object",
+            "properties": {
+                "detail": {
+                    "type": "string",
+                    "example": "Мойка салона"
+                },
+                "duration_min": {
+                    "type": "integer",
+                    "example": 40
+                },
+                "price": {
+                    "type": "number",
+                    "example": 560.12
                 }
             }
         },

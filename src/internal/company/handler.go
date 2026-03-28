@@ -440,7 +440,7 @@ func (h *Handler) AddServiceToBranch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"message":    "Service added to branch successfully",
 		"branch_id":  req.BranchID,
 		"service_id": req.ServiceID,
@@ -588,12 +588,27 @@ func (h *Handler) AddServDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var price float32
+
+	if req.Price != nil {
+		price = *req.Price
+	} else {
+		// если required не сработал по какой-то причине, но лучше вернуть ошибку
+		http.Error(w, "price is required", http.StatusBadRequest)
+		return
+	}
+
 	details := ServDetails{
 		Detail:   req.Detail,
 		Duration: req.Duration,
 	}
 
-	createdDetail, err := h.company.AddServiceDetail(req.BranchServID, email, details)
+	prices := ServPrice{
+		Detail: req.Detail,
+		Price:  price,
+	}
+
+	createdDetail, err := h.company.AddServiceDetail(req.BranchServID, email, details, prices)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUserNotPartner):

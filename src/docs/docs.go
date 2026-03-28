@@ -1224,7 +1224,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/company.ServDetails"
+                                "$ref": "#/definitions/company.ServUpdateResponse"
                             }
                         }
                     },
@@ -1303,7 +1303,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/company.ServDetails"
+                                "$ref": "#/definitions/company.ServUpdateResponse"
                             }
                         }
                     },
@@ -1889,12 +1889,11 @@ const docTemplate = `{
         "admin.ApprovePartnerRequest": {
             "type": "object",
             "required": [
-                "inn"
+                "id"
             ],
             "properties": {
-                "inn": {
-                    "type": "string",
-                    "example": "123456789012"
+                "id": {
+                    "type": "string"
                 }
             }
         },
@@ -1904,6 +1903,9 @@ const docTemplate = `{
                 "email": {
                     "type": "string",
                     "example": "ivan@example.com"
+                },
+                "id": {
+                    "type": "string"
                 },
                 "info": {
                     "type": "string",
@@ -1948,6 +1950,10 @@ const docTemplate = `{
                 "surname": {
                     "type": "string",
                     "example": "Иванов"
+                },
+                "user_email": {
+                    "type": "string",
+                    "example": "email@mail.ru"
                 }
             }
         },
@@ -2121,7 +2127,8 @@ const docTemplate = `{
             "required": [
                 "branchserv_id",
                 "detail",
-                "duration"
+                "duration",
+                "price"
             ],
             "properties": {
                 "branchserv_id": {
@@ -2139,6 +2146,10 @@ const docTemplate = `{
                     "maximum": 1439,
                     "minimum": 1,
                     "example": 40
+                },
+                "price": {
+                    "type": "number",
+                    "example": 700.5
                 }
             }
         },
@@ -2351,6 +2362,23 @@ const docTemplate = `{
                 "duration_min": {
                     "type": "integer",
                     "example": 40
+                }
+            }
+        },
+        "company.ServUpdateResponse": {
+            "type": "object",
+            "properties": {
+                "detail": {
+                    "type": "string",
+                    "example": "Мойка салона"
+                },
+                "duration_min": {
+                    "type": "integer",
+                    "example": 40
+                },
+                "price": {
+                    "type": "number",
+                    "example": 560.12
                 }
             }
         },
