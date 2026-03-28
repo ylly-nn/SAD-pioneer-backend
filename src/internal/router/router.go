@@ -110,6 +110,7 @@ func New(authMiddleware *middleware.AuthMiddleware, adminMiddleware *middleware.
 		r.Get("/partner-requests/pending", adminHandler.GetPendingRequests)
 		r.Get("/partner-requests/approved", adminHandler.GetApprovedRequests)
 		r.Get("/partner-requests/rejected", adminHandler.GetRejectedRequests)
+		r.Get("/partner-requests/{id}", adminHandler.GetRequest)
 		r.Post("/partner-requests/take", adminHandler.TakeRequestToWork)
 		r.Post("/partner-requests/approve", adminHandler.ApprovePartnerRequest)
 		r.Post("/partner-requests/reject", adminHandler.RejectPartnerRequest)

@@ -7,6 +7,7 @@ import (
 
 	"src/internal/auth"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -20,12 +21,12 @@ type UserStorage interface {
 // PartnerRequestStorage интерфейс для работы с заявками
 type PartnerRequestStorage interface {
 	Create(req *PartnerRequest) error
-	GetByINN(inn string) (*PartnerRequest, error)
+	GetByID(id uuid.UUID) (*PartnerRequest, error)
 	GetByStatus(status string) ([]*PartnerRequest, error)
 	GetPending() ([]*PartnerRequest, error)
 	GetAll() ([]*PartnerRequest, error)
-	UpdateStatus(inn string, status string) error
-	Delete(inn string) error
+	UpdateStatus(id uuid.UUID, status string) error
+	//Delete(inn string) error
 }
 
 // CompanyStorage интерфейс для работы с компаниями
@@ -135,15 +136,15 @@ func (s *PostgresPartnerRequestStorage) Create(req *PartnerRequest) error {
 	return err
 }
 
-// Получение информации из заявки по ИНН
-func (s *PostgresPartnerRequestStorage) GetByINN(inn string) (*PartnerRequest, error) {
+// Получение информации из заявки по ID
+func (s *PostgresPartnerRequestStorage) GetByID(id uuid.UUID) (*PartnerRequest, error) {
 	var req PartnerRequest
-	query := `SELECT status, user_email, inn, kpp, ogrn, org_name, org_short_name,
+	query := `SELECT id, status, user_email, inn, kpp, ogrn, org_name, org_short_name,
                      name, surname, patronymic, email, phone_number, info 
-              FROM part_req WHERE inn = $1`
+              FROM part_req WHERE id = $1`
 
-	err := s.db.QueryRow(query, inn).Scan(
-		&req.Status, &req.UserEmail, &req.INN, &req.KPP, &req.OGRN,
+	err := s.db.QueryRow(query, id).Scan(
+		&req.ID, &req.Status, &req.UserEmail, &req.INN, &req.KPP, &req.OGRN,
 		&req.OrgName, &req.OrgShortName,
 		&req.Name, &req.Surname, &req.Patronymic,
 		&req.Email, &req.Phone, &req.Info,
@@ -159,23 +160,23 @@ func (s *PostgresPartnerRequestStorage) GetByINN(inn string) (*PartnerRequest, e
 }
 
 // Обновление статуса у заявки
-func (s *PostgresPartnerRequestStorage) UpdateStatus(inn string, status string) error {
-	query := `UPDATE part_req SET status = $1 WHERE inn = $2`
-	result, err := s.db.Exec(query, status, inn)
+func (s *PostgresPartnerRequestStorage) UpdateStatus(id uuid.UUID, status string) error {
+	query := `UPDATE part_req SET status = $1 WHERE id = $2`
+	result, err := s.db.Exec(query, status, id)
 	if err != nil {
 		return err
 	}
 
 	rowsAffected, _ := result.RowsAffected()
 	if rowsAffected == 0 {
-		return fmt.Errorf("partner request with inn %s not found", inn)
+		return fmt.Errorf("partner request with id %s not found", id)
 	}
 	return nil
 }
 
 // Получение заявок в работе
 func (s *PostgresPartnerRequestStorage) GetPending() ([]*PartnerRequest, error) {
-	rows, err := s.db.Query(`SELECT status, user_email, inn, kpp, ogrn, org_name, org_short_name,
+	rows, err := s.db.Query(`SELECT id, status, user_email, inn, kpp, ogrn, org_name, org_short_name,
                                      name, surname, patronymic, email, phone_number, info 
                               FROM part_req WHERE status = 'pending'`)
 	if err != nil {
@@ -187,7 +188,7 @@ func (s *PostgresPartnerRequestStorage) GetPending() ([]*PartnerRequest, error) 
 	for rows.Next() {
 		var req PartnerRequest
 		err := rows.Scan(
-			&req.Status, &req.UserEmail, &req.INN, &req.KPP, &req.OGRN,
+			&req.ID, &req.Status, &req.UserEmail, &req.INN, &req.KPP, &req.OGRN,
 			&req.OrgName, &req.OrgShortName,
 			&req.Name, &req.Surname, &req.Patronymic,
 			&req.Email, &req.Phone, &req.Info,
@@ -202,7 +203,7 @@ func (s *PostgresPartnerRequestStorage) GetPending() ([]*PartnerRequest, error) 
 
 // Получение всех заявок
 func (s *PostgresPartnerRequestStorage) GetAll() ([]*PartnerRequest, error) {
-	rows, err := s.db.Query(`SELECT status, user_email, inn, kpp, ogrn, org_name, org_short_name,
+	rows, err := s.db.Query(`SELECT id, status, user_email, inn, kpp, ogrn, org_name, org_short_name,
                                      name, surname, patronymic, email, phone_number, info 
                               FROM part_req`)
 	if err != nil {
@@ -214,7 +215,7 @@ func (s *PostgresPartnerRequestStorage) GetAll() ([]*PartnerRequest, error) {
 	for rows.Next() {
 		var req PartnerRequest
 		err := rows.Scan(
-			&req.Status, &req.UserEmail, &req.INN, &req.KPP, &req.OGRN,
+			&req.ID, &req.Status, &req.UserEmail, &req.INN, &req.KPP, &req.OGRN,
 			&req.OrgName, &req.OrgShortName,
 			&req.Name, &req.Surname, &req.Patronymic,
 			&req.Email, &req.Phone, &req.Info,
@@ -229,7 +230,7 @@ func (s *PostgresPartnerRequestStorage) GetAll() ([]*PartnerRequest, error) {
 
 // Получение заявок с определенным статусом
 func (s *PostgresPartnerRequestStorage) GetByStatus(status string) ([]*PartnerRequest, error) {
-	rows, err := s.db.Query(`SELECT status, user_email, inn, kpp, ogrn, org_name, org_short_name,
+	rows, err := s.db.Query(`SELECT id, status, user_email, inn, kpp, ogrn, org_name, org_short_name,
                                      name, surname, patronymic, email, phone_number, info 
                               FROM part_req WHERE status = $1`, status)
 	if err != nil {
@@ -241,7 +242,7 @@ func (s *PostgresPartnerRequestStorage) GetByStatus(status string) ([]*PartnerRe
 	for rows.Next() {
 		var req PartnerRequest
 		err := rows.Scan(
-			&req.Status, &req.UserEmail, &req.INN, &req.KPP, &req.OGRN,
+			&req.ID, &req.Status, &req.UserEmail, &req.INN, &req.KPP, &req.OGRN,
 			&req.OrgName, &req.OrgShortName,
 			&req.Name, &req.Surname, &req.Patronymic,
 			&req.Email, &req.Phone, &req.Info,

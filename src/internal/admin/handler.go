@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 // Handler обрабатывает HTTP-запросы для авторизации пользователей
@@ -62,7 +63,7 @@ func (h *Handler) CreatePartnerRequest(w http.ResponseWriter, r *http.Request) {
 // TakeRequestToWork обрабатывает POST /admin/partner-requests/take, меняет статус заявки
 func (h *Handler) TakeRequestToWork(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		INN string `json:"inn" validate:"required"`
+		ID uuid.UUID `json:"id" validate:"required"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -75,7 +76,7 @@ func (h *Handler) TakeRequestToWork(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.admin.TakeRequestToWork(req.INN)
+	err := h.admin.TakeRequestToWork(req.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -84,7 +85,7 @@ func (h *Handler) TakeRequestToWork(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": "Request taken to work",
-		"inn":     req.INN,
+		"id":      req.ID.String(),
 		"status":  "pending",
 	})
 }
@@ -163,7 +164,7 @@ func (h *Handler) ApprovePartnerRequest(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err := h.admin.ApprovePartnerRequest(req.INN)
+	err := h.admin.ApprovePartnerRequest(req.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -178,7 +179,7 @@ func (h *Handler) ApprovePartnerRequest(w http.ResponseWriter, r *http.Request) 
 // RejectPartnerRequest обрабатывает POST /admin/partner-requests/reject, отклоняет заявку
 func (h *Handler) RejectPartnerRequest(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		INN string `json:"inn" validate:"required"`
+		ID uuid.UUID `json:"id" validate:"required"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -191,7 +192,7 @@ func (h *Handler) RejectPartnerRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.admin.RejectPartnerRequest(req.INN)
+	err := h.admin.RejectPartnerRequest(req.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -200,20 +201,26 @@ func (h *Handler) RejectPartnerRequest(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": "Request rejected",
-		"inn":     req.INN,
+		"inn":     req.ID.String(),
 		"status":  "rejected",
 	})
 }
 
-// GetRequestStatus обрабатывает GET /partner/request/{inn}, получает статус заявки
-func (h *Handler) GetRequestStatus(w http.ResponseWriter, r *http.Request) {
-	inn := chi.URLParam(r, "inn")
-	if inn == "" {
-		http.Error(w, "INN is required", http.StatusBadRequest)
+// GetRequest обрабатывает GET /admin/partner-requests/{id}
+func (h *Handler) GetRequest(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	if idStr == "" {
+		http.Error(w, "ID is required", http.StatusBadRequest)
 		return
 	}
 
-	req, err := h.admin.GetRequestStatus(inn)
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		http.Error(w, "ID must be UUID", http.StatusBadRequest)
+		return
+	}
+
+	req, err := h.admin.GetRequest(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return

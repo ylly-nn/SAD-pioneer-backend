@@ -1,9 +1,13 @@
 package admin
 
+import "github.com/google/uuid"
+
 // PartnerRequest - заявка на регистрацию организации
 type PartnerRequest struct {
+	ID uuid.UUID `json:"id" db:"id"`
+
 	Status    string `json:"status" db:"status" example:"new"`
-	UserEmail string `json:"-" db:"email@gmail.com"`
+	UserEmail string `json:"user_email" db:"user_email" example:"email@mail.ru"`
 
 	INN          string `json:"inn" db:"inn" example:"123456789012"`
 	KPP          string `json:"kpp" db:"kpp" example:"123456789"`
@@ -46,7 +50,7 @@ type PartnerRequestRequest struct {
 
 // ApprovePartnerRequest - запрос на одобрение заявки
 type ApprovePartnerRequest struct {
-	INN string `json:"inn" example:"123456789012" validate:"required"`
+	ID uuid.UUID `json:"id" validate:"required"`
 }
 
 // Ошибки

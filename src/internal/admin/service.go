@@ -5,6 +5,8 @@ import (
 	"time"
 
 	configPkg "src/internal/config"
+
+	"github.com/google/uuid"
 )
 
 type Config struct {
@@ -93,14 +95,14 @@ func (s *AdminManager) CreatePartnerRequest(userEmail string, req *PartnerReques
 }
 
 // Смена статуса заявки с "новая" на "в работе" (new -> pending)
-func (s *AdminManager) TakeRequestToWork(inn string) error {
-	// Получение заявки по INN
-	req, err := s.partnerRequestStorage.GetByINN(inn)
+func (s *AdminManager) TakeRequestToWork(id uuid.UUID) error {
+	// Получение заявки по ID
+	req, err := s.partnerRequestStorage.GetByID(id)
 	if err != nil {
 		return fmt.Errorf("failed to get request: %w", err)
 	}
 	if req == nil {
-		return fmt.Errorf("request with inn %s not found", inn)
+		return fmt.Errorf("request with id %s not found", id)
 	}
 
 	// Проверка, что заявка в статусе "new"
@@ -109,7 +111,7 @@ func (s *AdminManager) TakeRequestToWork(inn string) error {
 	}
 
 	// Обновление статус на "pending"
-	if err := s.partnerRequestStorage.UpdateStatus(inn, "pending"); err != nil {
+	if err := s.partnerRequestStorage.UpdateStatus(id, "pending"); err != nil {
 		return fmt.Errorf("failed to update request status: %w", err)
 	}
 
@@ -117,14 +119,14 @@ func (s *AdminManager) TakeRequestToWork(inn string) error {
 }
 
 // Одобрение заявки (только для админов)
-func (s *AdminManager) ApprovePartnerRequest(inn string) error {
-	// Получение заявки по INN
-	req, err := s.partnerRequestStorage.GetByINN(inn)
+func (s *AdminManager) ApprovePartnerRequest(id uuid.UUID) error {
+	// Получение заявки по ID
+	req, err := s.partnerRequestStorage.GetByID(id)
 	if err != nil {
 		return fmt.Errorf("failed to get request: %w", err)
 	}
 	if req == nil {
-		return fmt.Errorf("request with inn %s not found", inn)
+		return fmt.Errorf("request with id %s not found", id)
 	}
 	if req.Status != "pending" {
 		return fmt.Errorf("request already processed")
@@ -144,12 +146,12 @@ func (s *AdminManager) ApprovePartnerRequest(inn string) error {
 	}
 
 	// Создание нулевого пользователя компании
-	if err := s.partnersUsersStorage.Create(req.UserEmail, inn); err != nil {
+	if err := s.partnersUsersStorage.Create(req.UserEmail, req.INN); err != nil {
 		return fmt.Errorf("failed to create partner user record: %w", err)
 	}
 
 	// Обновление статуса заявки
-	if err := s.partnerRequestStorage.UpdateStatus(inn, "approved"); err != nil {
+	if err := s.partnerRequestStorage.UpdateStatus(id, "approved"); err != nil {
 		return fmt.Errorf("failed to update request status: %w", err)
 	}
 
@@ -157,14 +159,14 @@ func (s *AdminManager) ApprovePartnerRequest(inn string) error {
 }
 
 // Отклонение заявки
-func (s *AdminManager) RejectPartnerRequest(inn string) error {
-	// Получение заявки по INN
-	req, err := s.partnerRequestStorage.GetByINN(inn)
+func (s *AdminManager) RejectPartnerRequest(id uuid.UUID) error {
+	// Получение заявки по ID
+	req, err := s.partnerRequestStorage.GetByID(id)
 	if err != nil {
 		return fmt.Errorf("failed to get request: %w", err)
 	}
 	if req == nil {
-		return fmt.Errorf("request with inn %s not found", inn)
+		return fmt.Errorf("request with id %s not found", id)
 	}
 
 	// Проверка, что заявка в статусе "pending"
@@ -173,7 +175,7 @@ func (s *AdminManager) RejectPartnerRequest(inn string) error {
 	}
 
 	// Обновление статуса на "rejected"
-	if err := s.partnerRequestStorage.UpdateStatus(inn, "rejected"); err != nil {
+	if err := s.partnerRequestStorage.UpdateStatus(id, "rejected"); err != nil {
 		return fmt.Errorf("failed to update request status: %w", err)
 	}
 
@@ -196,14 +198,14 @@ func (s *AdminManager) GetPendingRequests() ([]*PartnerRequest, error) {
 }
 
 // Получение статуса заявки по ИНН
-func (s *AdminManager) GetRequestStatus(inn string) (*PartnerRequest, error) {
-	// Получение заявки по INN
-	req, err := s.partnerRequestStorage.GetByINN(inn)
+func (s *AdminManager) GetRequest(id uuid.UUID) (*PartnerRequest, error) {
+	// Получение заявки по ID
+	req, err := s.partnerRequestStorage.GetByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get request: %w", err)
 	}
 	if req == nil {
-		return nil, fmt.Errorf("request with inn %s not found", inn)
+		return nil, fmt.Errorf("request with id %s not found", id)
 	}
 
 	return req, nil
