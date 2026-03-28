@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"src/internal/auth"
+	"time"
 )
 
 // Интерфейс для работы с пользователями
@@ -47,15 +48,15 @@ func (s *PostgresPartnerRequestStorage) Create(req *PartnerRequest) error {
 	query := `
         INSERT INTO part_req (
             status, user_email, inn, kpp, ogrn, org_name, org_short_name,
-            name, surname, patronymic, email, phone_number, info
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            name, surname, patronymic, email, phone_number, info, created_at, last_used
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
     `
 
 	_, err := s.db.Exec(
 		query,
 		"new",
 		req.UserEmail, req.INN, req.KPP, req.OGRN, req.OrgName, req.OrgShortName,
-		req.Name, req.Surname, req.Patronymic, req.Email, req.Phone, req.Info,
+		req.Name, req.Surname, req.Patronymic, req.Email, req.Phone, req.Info, time.Now(), time.Now(),
 	)
 
 	return err
@@ -65,14 +66,14 @@ func (s *PostgresPartnerRequestStorage) Create(req *PartnerRequest) error {
 func (s *PostgresPartnerRequestStorage) GetByINN(inn string) (*PartnerRequest, error) {
 	var req PartnerRequest
 	query := `SELECT status, user_email, inn, kpp, ogrn, org_name, org_short_name,
-                     name, surname, patronymic, email, phone_number, info 
+                     name, surname, patronymic, email, phone_number, info, created_at, last_used 
               FROM part_req WHERE inn = $1`
 
 	err := s.db.QueryRow(query, inn).Scan(
 		&req.Status, &req.UserEmail, &req.INN, &req.KPP, &req.OGRN,
 		&req.OrgName, &req.OrgShortName,
 		&req.Name, &req.Surname, &req.Patronymic,
-		&req.Email, &req.Phone, &req.Info,
+		&req.Email, &req.Phone, &req.Info, &req.CreatedAt, &req.LastUsed,
 	)
 
 	if err != nil {
@@ -142,14 +143,14 @@ func (s *PostgresCompanyStorage) Exists(inn string) (bool, error) {
 func (s *PostgresPartnerRequestStorage) GetByUserEmail(email string) (*PartnerRequest, error) {
 	var req PartnerRequest
 	query := `SELECT status, user_email, inn, kpp, ogrn, org_name, org_short_name,
-                     name, surname, patronymic, email, phone_number, info 
+                     name, surname, patronymic, email, phone_number, info, created_at, last_used  
               FROM part_req WHERE user_email = $1`
 
 	err := s.db.QueryRow(query, email).Scan(
 		&req.Status, &req.UserEmail, &req.INN, &req.KPP, &req.OGRN,
 		&req.OrgName, &req.OrgShortName,
 		&req.Name, &req.Surname, &req.Patronymic,
-		&req.Email, &req.Phone, &req.Info,
+		&req.Email, &req.Phone, &req.Info, &req.CreatedAt, &req.LastUsed,
 	)
 
 	if err != nil {
@@ -163,11 +164,11 @@ func (s *PostgresPartnerRequestStorage) GetByUserEmail(email string) (*PartnerRe
 
 // GetPartUserByEmail - получение партнёра по email
 func (s *PostgresPartnerRequestStorage) GetPartUserByEmail(user_email string) (PartnersUsers, error) {
-	var psrtnerUser PartnersUsers
+	var partnerUser PartnersUsers
 
 	query := `SELECT inn, user_email FROM part_req WHERE user_email = $1`
 
-	err := s.db.QueryRow(query, user_email).Scan(&psrtnerUser.Email, &psrtnerUser.Inn)
+	err := s.db.QueryRow(query, user_email).Scan(&partnerUser.Email, &partnerUser.Inn)
 
 	if err != nil {
 		// Если запись не найдена, возвращаем пустую структуру без ошибки.
@@ -178,6 +179,6 @@ func (s *PostgresPartnerRequestStorage) GetPartUserByEmail(user_email string) (P
 		return PartnersUsers{}, fmt.Errorf("failed to scan partner user: %w", err)
 	}
 
-	return psrtnerUser, nil
+	return partnerUser, nil
 
 }

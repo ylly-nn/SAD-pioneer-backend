@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"src/internal/auth"
 
@@ -122,15 +123,15 @@ func (s *PostgresPartnerRequestStorage) Create(req *PartnerRequest) error {
 	query := `
         INSERT INTO part_req (
             status, user_email, inn, kpp, ogrn, org_name, org_short_name,
-            name, surname, patronymic, email, phone_number, info
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            name, surname, patronymic, email, phone_number, info, created_at, last_used
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
     `
 
 	_, err := s.db.Exec(
 		query,
 		"new",
 		req.UserEmail, req.INN, req.KPP, req.OGRN, req.OrgName, req.OrgShortName,
-		req.Name, req.Surname, req.Patronymic, req.Email, req.Phone, req.Info,
+		req.Name, req.Surname, req.Patronymic, req.Email, req.Phone, req.Info, time.Now(), time.Now(),
 	)
 
 	return err
@@ -140,14 +141,14 @@ func (s *PostgresPartnerRequestStorage) Create(req *PartnerRequest) error {
 func (s *PostgresPartnerRequestStorage) GetByID(id uuid.UUID) (*PartnerRequest, error) {
 	var req PartnerRequest
 	query := `SELECT id, status, user_email, inn, kpp, ogrn, org_name, org_short_name,
-                     name, surname, patronymic, email, phone_number, info 
+                     name, surname, patronymic, email, phone_number, info, created_at, last_used
               FROM part_req WHERE id = $1`
 
 	err := s.db.QueryRow(query, id).Scan(
 		&req.ID, &req.Status, &req.UserEmail, &req.INN, &req.KPP, &req.OGRN,
 		&req.OrgName, &req.OrgShortName,
 		&req.Name, &req.Surname, &req.Patronymic,
-		&req.Email, &req.Phone, &req.Info,
+		&req.Email, &req.Phone, &req.Info, &req.CreatedAt, &req.LastUsed,
 	)
 
 	if err != nil {
@@ -161,7 +162,7 @@ func (s *PostgresPartnerRequestStorage) GetByID(id uuid.UUID) (*PartnerRequest, 
 
 // Обновление статуса у заявки
 func (s *PostgresPartnerRequestStorage) UpdateStatus(id uuid.UUID, status string) error {
-	query := `UPDATE part_req SET status = $1 WHERE id = $2`
+	query := `UPDATE part_req SET status = $1, last_used = NOW() WHERE id = $2`
 	result, err := s.db.Exec(query, status, id)
 	if err != nil {
 		return err
@@ -177,7 +178,7 @@ func (s *PostgresPartnerRequestStorage) UpdateStatus(id uuid.UUID, status string
 // Получение заявок в работе
 func (s *PostgresPartnerRequestStorage) GetPending() ([]*PartnerRequest, error) {
 	rows, err := s.db.Query(`SELECT id, status, user_email, inn, kpp, ogrn, org_name, org_short_name,
-                                     name, surname, patronymic, email, phone_number, info 
+                                     name, surname, patronymic, email, phone_number, info, created_at, last_used 
                               FROM part_req WHERE status = 'pending'`)
 	if err != nil {
 		return nil, err
@@ -191,7 +192,7 @@ func (s *PostgresPartnerRequestStorage) GetPending() ([]*PartnerRequest, error) 
 			&req.ID, &req.Status, &req.UserEmail, &req.INN, &req.KPP, &req.OGRN,
 			&req.OrgName, &req.OrgShortName,
 			&req.Name, &req.Surname, &req.Patronymic,
-			&req.Email, &req.Phone, &req.Info,
+			&req.Email, &req.Phone, &req.Info, &req.CreatedAt, &req.LastUsed,
 		)
 		if err != nil {
 			return nil, err
@@ -204,7 +205,7 @@ func (s *PostgresPartnerRequestStorage) GetPending() ([]*PartnerRequest, error) 
 // Получение всех заявок
 func (s *PostgresPartnerRequestStorage) GetAll() ([]*PartnerRequest, error) {
 	rows, err := s.db.Query(`SELECT id, status, user_email, inn, kpp, ogrn, org_name, org_short_name,
-                                     name, surname, patronymic, email, phone_number, info 
+                                     name, surname, patronymic, email, phone_number, info, created_at, last_used  
                               FROM part_req`)
 	if err != nil {
 		return nil, err
@@ -218,7 +219,7 @@ func (s *PostgresPartnerRequestStorage) GetAll() ([]*PartnerRequest, error) {
 			&req.ID, &req.Status, &req.UserEmail, &req.INN, &req.KPP, &req.OGRN,
 			&req.OrgName, &req.OrgShortName,
 			&req.Name, &req.Surname, &req.Patronymic,
-			&req.Email, &req.Phone, &req.Info,
+			&req.Email, &req.Phone, &req.Info, &req.CreatedAt, &req.LastUsed,
 		)
 		if err != nil {
 			return nil, err
@@ -231,7 +232,7 @@ func (s *PostgresPartnerRequestStorage) GetAll() ([]*PartnerRequest, error) {
 // Получение заявок с определенным статусом
 func (s *PostgresPartnerRequestStorage) GetByStatus(status string) ([]*PartnerRequest, error) {
 	rows, err := s.db.Query(`SELECT id, status, user_email, inn, kpp, ogrn, org_name, org_short_name,
-                                     name, surname, patronymic, email, phone_number, info 
+                                     name, surname, patronymic, email, phone_number, info, created_at, last_used   
                               FROM part_req WHERE status = $1`, status)
 	if err != nil {
 		return nil, err
@@ -245,7 +246,7 @@ func (s *PostgresPartnerRequestStorage) GetByStatus(status string) ([]*PartnerRe
 			&req.ID, &req.Status, &req.UserEmail, &req.INN, &req.KPP, &req.OGRN,
 			&req.OrgName, &req.OrgShortName,
 			&req.Name, &req.Surname, &req.Patronymic,
-			&req.Email, &req.Phone, &req.Info,
+			&req.Email, &req.Phone, &req.Info, &req.CreatedAt, &req.LastUsed,
 		)
 		if err != nil {
 			return nil, err

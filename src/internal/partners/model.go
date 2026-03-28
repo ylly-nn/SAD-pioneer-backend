@@ -1,5 +1,7 @@
 package partners
 
+import "time"
+
 // PartnerRequest - заявка на регистрацию организации
 type PartnerRequest struct {
 	Status    string `json:"status" db:"status"`
@@ -17,6 +19,9 @@ type PartnerRequest struct {
 	Email      string `json:"email" db:"email"`
 	Phone      string `json:"phone" db:"phone_number"`
 	Info       string `json:"info,omitempty" db:"info"`
+
+	CreatedAt time.Time  `json:"created_at" db:"created_at"`
+	LastUsed  *time.Time `json:"last_used,omitempty" db:"last_used"`
 }
 
 // Company - данные организации

@@ -1,6 +1,10 @@
 package admin
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // PartnerRequest - заявка на регистрацию организации
 type PartnerRequest struct {
@@ -21,6 +25,9 @@ type PartnerRequest struct {
 	Email      string `json:"email" db:"email" example:"ivan@example.com"`
 	Phone      string `json:"phone" db:"phone_number" example:"9990000000"`
 	Info       string `json:"info,omitempty" db:"info" example:"Дополнительная информация"`
+
+	CreatedAt time.Time  `json:"created_at" db:"created_at"`
+	LastUsed  *time.Time `json:"last_used" db:"last_used"`
 }
 
 // Company - данные организации
