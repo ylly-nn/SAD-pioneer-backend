@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"src/internal/auth"
+
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // Интерфейс для работы с пользователями
@@ -42,6 +44,7 @@ type PartnersUsersStorage interface {
 type AdminStorage interface {
 	IsAdmin(email string) (bool, error)
 	GetByEmail(email string) (*Admin, error)
+	Create(email, name, surname string) error
 }
 
 // Admin структура для таблицы admin
@@ -49,6 +52,22 @@ type Admin struct {
 	Email   string `json:"email" db:"email"`
 	Name    string `json:"name" db:"name"`
 	Surname string `json:"surname" db:"surname"`
+}
+
+// Create создаёт нового администратора
+func (s *PostgresAdminStorage) Create(email, name, surname string) error {
+	query := `INSERT INTO admin (email, name, surname) VALUES ($1, $2, $3)`
+
+	_, err := s.db.Exec(query, email, name, surname)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return fmt.Errorf("admin with email %s already exists", email)
+		}
+		return fmt.Errorf("failed to create admin: %w", err)
+	}
+
+	return nil
 }
 
 // PostgresAdminStorage реализация для PostgreSQL

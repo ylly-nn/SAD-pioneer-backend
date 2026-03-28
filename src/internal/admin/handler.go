@@ -222,3 +222,58 @@ func (h *Handler) GetRequestStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(req)
 }
+
+// CreateAdmin обрабатывает POST /admin/create-admin, создаёт нового администратора
+func (h *Handler) CreateAdmin(w http.ResponseWriter, r *http.Request) {
+	// Получение claims из токена
+	claims, ok := r.Context().Value("user").(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Проверка, что текущий пользователь — админ
+	adminEmail, ok := claims["email"].(string)
+	if !ok || adminEmail == "" {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	isAdmin, err := h.admin.IsAdmin(adminEmail)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	if !isAdmin {
+		http.Error(w, "Forbidden: only admins can create new admins", http.StatusForbidden)
+		return
+	}
+
+	var req struct {
+		Email   string `json:"email" validate:"required,email"`
+		Name    string `json:"name" validate:"required"`
+		Surname string `json:"surname" validate:"required"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := middleware.ValidateStruct(req); err != nil {
+		middleware.SendValidationError(w, err)
+		return
+	}
+
+	err = h.admin.CreateAdmin(req.Email, req.Name, req.Surname)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Admin created successfully",
+		"email":   req.Email,
+	})
+}

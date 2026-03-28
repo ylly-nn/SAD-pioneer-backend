@@ -208,3 +208,41 @@ func (s *AdminManager) GetRequestStatus(inn string) (*PartnerRequest, error) {
 
 	return req, nil
 }
+
+// CreateAdmin создаёт нового администратора
+func (s *AdminManager) CreateAdmin(email, name, surname string) error {
+	// Проверка, что email не пустой
+	if email == "" {
+		return fmt.Errorf("email is required")
+	}
+	if name == "" {
+		return fmt.Errorf("name is required")
+	}
+	if surname == "" {
+		return fmt.Errorf("surname is required")
+	}
+
+	// Проверка, что пользователь с таким email существует в all_users
+	user, err := s.userStorage.GetByEmail(email)
+	if err != nil {
+		return fmt.Errorf("failed to check user: %w", err)
+	}
+	if user == nil {
+		return fmt.Errorf("user with email %s does not exist", email)
+	}
+
+	// Проверка, что пользователь уже не является админом
+	isAdmin, err := s.adminStorage.IsAdmin(email)
+	if err != nil {
+		return fmt.Errorf("failed to check admin status: %w", err)
+	}
+	if isAdmin {
+		return fmt.Errorf("user is already an admin")
+	}
+
+	if err := s.adminStorage.Create(email, name, surname); err != nil {
+		return fmt.Errorf("failed to create admin: %w", err)
+	}
+
+	return nil
+}

@@ -103,6 +103,8 @@ func New(authMiddleware *middleware.AuthMiddleware, adminMiddleware *middleware.
 		r.Use(authMiddleware.Authenticate)
 		r.Use(adminMiddleware.RequireAdmin)
 
+		r.Post("/create-admin", adminHandler.CreateAdmin)
+
 		r.Get("/partner-requests/", adminHandler.GetAllRequests)
 		r.Get("/partner-requests/new", adminHandler.GetNewRequests)
 		r.Get("/partner-requests/pending", adminHandler.GetPendingRequests)
