@@ -635,6 +635,7 @@ GET /partner/request
 ~~~
 {
    "status":"<status>",
+   "user_email":<user_email>,
    "inn":"<inn>",
    "kpp":"<kpp>",
    "ogrn":"<ogrn>",
@@ -645,7 +646,9 @@ GET /partner/request
    "patronymic":"<patronymic>",
    "email":"<email>",
    "phone":"<phone>",
-   "info":"<info>"
+   "info":"<info>",
+   "created_at":"<created_at>,
+   "last_used":"last_used"
 }
 ~~~
 ---
@@ -667,7 +670,9 @@ body:
 {
     [
         {
+        "id":"<uuid>",
         "status":"<status>",
+        "user_email":"<user_email>",
         "inn":"<inn>",
         "kpp":"<kpp>",
         "ogrn":"<ogrn>",
@@ -678,7 +683,9 @@ body:
         "patronymic":"<patronymic>",
         "email":"<email>",
         "phone":"<phone>",
-        "info":"<info>"
+        "info":"<info>",
+        "created_at":"<created_at>,
+        "last_used":"last_used"
         },
     ]
 }
@@ -699,7 +706,9 @@ body:
 {
     [
         {
+        "id":"<uuid>",
         "status":"new",
+        "user_email":"<user_email>",
         "inn":"<inn>",
         "kpp":"<kpp>",
         "ogrn":"<ogrn>",
@@ -710,7 +719,9 @@ body:
         "patronymic":"<patronymic>",
         "email":"<email>",
         "phone":"<phone>",
-        "info":"<info>"
+        "info":"<info>",
+        "created_at":"<created_at>,
+        "last_used":"last_used"
         },
     ]
 }
@@ -731,7 +742,9 @@ body:
 {
     [
         {
+        "id":"<uuid>",
         "status":"pending",
+        "user_email":"<user_email>",
         "inn":"<inn>",
         "kpp":"<kpp>",
         "ogrn":"<ogrn>",
@@ -742,7 +755,9 @@ body:
         "patronymic":"<patronymic>",
         "email":"<email>",
         "phone":"<phone>",
-        "info":"<info>"
+        "info":"<info>",
+        "created_at":"<created_at>,
+        "last_used":"last_used"
         },
     ]
 }
@@ -763,7 +778,9 @@ body:
 {
     [
         {
+        "id":"<uuid>",
         "status":"approved",
+        "user_email":"<user_email>",
         "inn":"<inn>",
         "kpp":"<kpp>",
         "ogrn":"<ogrn>",
@@ -774,7 +791,9 @@ body:
         "patronymic":"<patronymic>",
         "email":"<email>",
         "phone":"<phone>",
-        "info":"<info>"
+        "info":"<info>",
+        "created_at":"<created_at>,
+        "last_used":"last_used"
         },
     ]
 }
@@ -795,7 +814,9 @@ body:
 {
     [
         {
+        "id":"<uuid>",
         "status":"rejected",
+        "user_email":"<user_email>",
         "inn":"<inn>",
         "kpp":"<kpp>",
         "ogrn":"<ogrn>",
@@ -806,7 +827,9 @@ body:
         "patronymic":"<patronymic>",
         "email":"<email>",
         "phone":"<phone>",
-        "info":"<info>"
+        "info":"<info>",
+        "created_at":"<created_at>,
+        "last_used":"last_used"
         },
     ]
 }
@@ -820,14 +843,14 @@ Header: Authorization: Bearer <токен>
 body:
 ~~~
 {
-    "inn": "<inn>", 
+    "id": "<uuid>", 
 }
 ~~~
 
 Пример успешного ответа
 ~~~
 {
-   "inn":"<inn>",
+   "id":"<uuid>",
    "message":"Request taken to work",
    "status":"pending"
 }
@@ -841,7 +864,7 @@ Header: Authorization: Bearer <токен>
 body:
 ~~~
 {
-    "inn": "<inn>", 
+    "id": "<uuid>", 
 }
 ~~~
 
@@ -860,16 +883,54 @@ Header: Authorization: Bearer <токен>
 body:
 ~~~
 {
-    "inn": "<inn>", 
+    "id": "<uuid>", 
 }
 ~~~
 
 Пример успешного ответа
 ~~~
 {
-   "inn":"<inn>",
+   "id":"<uuid>",
    "message":"Request rejected",
    "status":"rejected"
+}
+~~~
+---
+
+---
+### GET /admin/partner-requests/{id}
+Получение информации об одной заявке по id
+
+Header: Authorization: Bearer <токен>
+
+body:
+~~~
+{
+}
+~~~
+Пример успешного ответа
+~~~
+{
+    [
+        {
+        "id":"<uuid>",
+        "status":"<status>",
+        "user_email":"<user_email>",
+        "inn":"<inn>",
+        "kpp":"<kpp>",
+        "ogrn":"<ogrn>",
+        "org_name":"<org_name>",
+        "org_short_name":"<org_short_name>",
+        "name":"<name>",
+        "surname":"<surname>",
+        "patronymic":"<patronymic>",
+        "email":"<email>",
+        "phone":"<phone>",
+        "info":"<info>",
+        "created_at":"<created_at>,
+        "last_used":"last_used"
+        },
+    ]
 }
 ~~~
 ---

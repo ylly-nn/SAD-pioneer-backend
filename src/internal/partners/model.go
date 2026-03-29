@@ -5,7 +5,7 @@ import "time"
 // PartnerRequest - заявка на регистрацию организации
 type PartnerRequest struct {
 	Status    string `json:"status" db:"status"`
-	UserEmail string `json:"-" db:"user_email"`
+	UserEmail string `json:"user_email" db:"user_email"`
 
 	INN          string `json:"inn" db:"inn"`
 	KPP          string `json:"kpp" db:"kpp"`
