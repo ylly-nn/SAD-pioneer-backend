@@ -763,6 +763,43 @@ body:
 }
 ~~~
 ---
+---
+### GET /admin/partner-requests/{id}
+Получение информации об одной заявке по id
+
+Header: Authorization: Bearer <токен>
+
+body:
+~~~
+{
+}
+~~~
+Пример успешного ответа
+~~~
+{
+    [
+        {
+        "id":"<uuid>",
+        "status":"<status>",
+        "user_email":"<user_email>",
+        "inn":"<inn>",
+        "kpp":"<kpp>",
+        "ogrn":"<ogrn>",
+        "org_name":"<org_name>",
+        "org_short_name":"<org_short_name>",
+        "name":"<name>",
+        "surname":"<surname>",
+        "patronymic":"<patronymic>",
+        "email":"<email>",
+        "phone":"<phone>",
+        "info":"<info>",
+        "created_at":"<created_at>,
+        "last_used":"last_used"
+        },
+    ]
+}
+~~~
+---
 ### GET /admin/partner-requests/approved
 Получение всех принятых заявок от партнеров
 
@@ -896,41 +933,27 @@ body:
 }
 ~~~
 ---
-
 ---
-### GET /admin/partner-requests/{id}
-Получение информации об одной заявке по id
+### POST /admin/create-admin
+Добавление нового админа
 
 Header: Authorization: Bearer <токен>
 
 body:
 ~~~
 {
+    "email":"<email>",
+    "name":"<name>",
+    "surname":"<surname>"
 }
 ~~~
+
 Пример успешного ответа
 ~~~
 {
-    [
-        {
-        "id":"<uuid>",
-        "status":"<status>",
-        "user_email":"<user_email>",
-        "inn":"<inn>",
-        "kpp":"<kpp>",
-        "ogrn":"<ogrn>",
-        "org_name":"<org_name>",
-        "org_short_name":"<org_short_name>",
-        "name":"<name>",
-        "surname":"<surname>",
-        "patronymic":"<patronymic>",
-        "email":"<email>",
-        "phone":"<phone>",
-        "info":"<info>",
-        "created_at":"<created_at>,
-        "last_used":"last_used"
-        },
-    ]
+   "email":"<email>",
+   "message":"Admin created successfully"
 }
 ~~~
 ---
+
