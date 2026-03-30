@@ -89,12 +89,12 @@ func getBranchByCityServ() {
 // @Security     BearerAuth
 // @Produce      json
 // @Param        id_branchserv  path string true  "branchserv ID"
-// @Success      200  {array} branch.ServiceDetails
+// @Success      200  {array} branch.ServResponse
 // @Failure      401  {string} string
 // @Failure      500  {string} string  "Internal server error"
 // @Router       /branch/service/details/{id_branchserv} [get]
 func getServiceDetails() {
-	var _ = branch.ServiceDetails{}
+	var _ = branch.ServResponse{}
 }
 
 // Get /branch/freetime?branch_id=<id_branch>&date=<date>&duration=<сумма_минут_выбранных_услуг>

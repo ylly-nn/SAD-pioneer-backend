@@ -885,7 +885,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/branch.ServiceDetails"
+                                "$ref": "#/definitions/branch.ServResponse"
                             }
                         }
                     },
@@ -2090,16 +2090,20 @@ const docTemplate = `{
                 }
             }
         },
-        "branch.ServiceDetails": {
+        "branch.ServResponse": {
             "type": "object",
             "properties": {
                 "detail": {
                     "type": "string",
-                    "example": "Мойка колёс"
+                    "example": "Мойка салона"
                 },
                 "duration_min": {
                     "type": "integer",
-                    "example": 35
+                    "example": 40
+                },
+                "price": {
+                    "type": "number",
+                    "example": 560.12
                 }
             }
         },

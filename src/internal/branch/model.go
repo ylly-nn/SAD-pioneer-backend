@@ -56,3 +56,14 @@ type ServiceDetails struct {
 	Detail   string `json:"detail" example:"Мойка колёс"`
 	Duration int    `json:"duration_min" example:"35"`
 }
+
+type ServPrice struct {
+	Detail string  `json:"detail" example:"Мойка салона"`
+	Price  float32 `json:"price" example:"560.12"`
+}
+
+type ServResponse struct {
+	Detail   string  `json:"detail" example:"Мойка салона"`
+	Duration int     `json:"duration_min" example:"40"`
+	Price    float32 `json:"price" example:"560.12"`
+}

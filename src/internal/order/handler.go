@@ -2,14 +2,12 @@ package order
 
 import (
 	"encoding/json"
-	"errors"
 	"log"
 	"net/http"
 	"src/internal/timeparsing"
 	"strconv"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -115,22 +113,6 @@ func (h *Handler) GetFreeTime(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// возвращает список всех заказов
-func (h *Handler) GetFullAllOrders(w http.ResponseWriter, r *http.Request) {
-	orders, err := h.order.GetFullAllOrders()
-	if err != nil {
-		log.Printf("GetOrdersByClient error: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(orders); err != nil {
-		log.Printf("GetOrdersByClient encode error: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-	}
-}
-
 // GetClientOrders обрабатывает GET /client/orders и возвращает заказы текущего аутентифицированного клиента
 // Email извлекается из JWT токена, который добавляется в контекст middleware'ой AuthMiddleware.Authenticate
 func (h *Handler) GetClientOrders(w http.ResponseWriter, r *http.Request) {
@@ -205,29 +187,45 @@ func (h *Handler) GetClientOrders(w http.ResponseWriter, r *http.Request) {
 
 // GetCompanyOrders обрабатывает GET /order/company/{inn} и возвращает полную информацию
 // о заказах всех клиентов для указанной организации (по ИНН).
-func (h *Handler) GetCompanyOrders(w http.ResponseWriter, r *http.Request) {
+// func (h *Handler) GetCompanyOrders(w http.ResponseWriter, r *http.Request) {
 
-	inn := chi.URLParam(r, "inn")
-	if inn == "" {
-		http.Error(w, "INN is required", http.StatusBadRequest)
-		return
-	}
+// 	inn := chi.URLParam(r, "inn")
+// 	if inn == "" {
+// 		http.Error(w, "INN is required", http.StatusBadRequest)
+// 		return
+// 	}
 
-	orders, err := h.order.GetByCompany(inn)
-	if err != nil {
+// 	orders, err := h.order.GetByCompany(inn)
+// 	if err != nil {
 
-		if errors.Is(err, ErrInnLen) {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		log.Printf("GetCompanyOrders error: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
+// 		if errors.Is(err, ErrInnLen) {
+// 			http.Error(w, err.Error(), http.StatusBadRequest)
+// 			return
+// 		}
+// 		log.Printf("GetCompanyOrders error: %v", err)
+// 		http.Error(w, "Internal server error", http.StatusInternalServerError)
+// 		return
+// 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(orders); err != nil {
-		log.Printf("GetCompanyOrders encode error: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-	}
-}
+// 	w.Header().Set("Content-Type", "application/json")
+// 	if err := json.NewEncoder(w).Encode(orders); err != nil {
+// 		log.Printf("GetCompanyOrders encode error: %v", err)
+// 		http.Error(w, "Internal server error", http.StatusInternalServerError)
+// 	}
+// }
+
+// // возвращает список всех заказов
+// func (h *Handler) GetFullAllOrders(w http.ResponseWriter, r *http.Request) {
+// 	orders, err := h.order.GetFullAllOrders()
+// 	if err != nil {
+// 		log.Printf("GetOrdersByClient error: %v", err)
+// 		http.Error(w, "Internal server error", http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	w.Header().Set("Content-Type", "application/json")
+// 	if err := json.NewEncoder(w).Encode(orders); err != nil {
+// 		log.Printf("GetOrdersByClient encode error: %v", err)
+// 		http.Error(w, "Internal server error", http.StatusInternalServerError)
+// 	}
+// }

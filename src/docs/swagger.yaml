@@ -137,14 +137,17 @@ definitions:
         example: ООО Ромашка
         type: string
     type: object
-  branch.ServiceDetails:
+  branch.ServResponse:
     properties:
       detail:
-        example: Мойка колёс
+        example: Мойка салона
         type: string
       duration_min:
-        example: 35
+        example: 40
         type: integer
+      price:
+        example: 560.12
+        type: number
     type: object
   client.GetCityResponse:
     properties:
@@ -1163,7 +1166,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/branch.ServiceDetails'
+              $ref: '#/definitions/branch.ServResponse'
             type: array
         "401":
           description: Unauthorized

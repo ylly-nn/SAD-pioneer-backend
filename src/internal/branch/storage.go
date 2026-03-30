@@ -26,7 +26,7 @@ type BranchStorage interface {
 
 	GetBranchByCityServ(city string, serviceID string) ([]*BrancByCityServ, error)
 
-	GetServiceDetails(branchServID uuid.UUID) ([]*ServiceDetails, error)
+	GetServiceDetails(branchServID uuid.UUID) ([]*ServiceDetails, []*ServPrice, error)
 }
 
 // PostgresBranchStorage реализует BranchStorage для PostgreSQL.
@@ -40,38 +40,59 @@ func NewPostgresBranchStorage(sqlDB *sql.DB) *PostgresBranchStorage {
 }
 
 // Получение деталей услуги по branch_serv
-func (s *PostgresBranchStorage) GetServiceDetails(branchServID uuid.UUID) ([]*ServiceDetails, error) {
-	var rawJSON json.RawMessage
-	err := s.DB.QueryRow(`SELECT service_detalis FROM branch_services WHERE id = $1`, branchServID).Scan(&rawJSON)
+func (s *PostgresBranchStorage) GetServiceDetails(branchServID uuid.UUID) ([]*ServiceDetails, []*ServPrice, error) {
+	var detailsJSON json.RawMessage
+	var priceJSON json.RawMessage
+	err := s.DB.QueryRow(`SELECT service_detalis, price FROM branch_services WHERE id = $1`, branchServID).Scan(&detailsJSON, &priceJSON)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("branch service not found")
+			return nil, nil, fmt.Errorf("branch service not found")
 		}
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrBranchServiceNotFound
+			return nil, nil, ErrBranchServiceNotFound
 		}
-		return nil, fmt.Errorf("query failed: %w", err)
+		return nil, nil, fmt.Errorf("query failed: %w", err)
 	}
 
-	// Если JSON пустой (например, NULL или "null"), возвращаем пустой срез
-	if len(rawJSON) == 0 || string(rawJSON) == "null" {
-		return []*ServiceDetails{}, nil
+	// Если JSON пустой возвращаем пустой срез
+	if len(detailsJSON) == 0 || string(detailsJSON) == "null" {
+		return []*ServiceDetails{}, []*ServPrice{}, nil
 	}
-
 	var detailsMap map[string]int
-	if err := json.Unmarshal(rawJSON, &detailsMap); err != nil {
-		return nil, fmt.Errorf("failed to parse service details: %w", err)
+	if len(detailsJSON) == 0 || string(detailsJSON) == "null" {
+		detailsMap = make(map[string]int)
+	} else {
+		if err := json.Unmarshal(detailsJSON, &detailsMap); err != nil {
+			return nil, nil, fmt.Errorf("failed to parse service details: %w", err)
+		}
 	}
 
-	result := make([]*ServiceDetails, 0, len(detailsMap))
+	var priceMap map[string]float32
+	if len(priceJSON) == 0 || string(priceJSON) == "null" {
+		priceMap = make(map[string]float32)
+	} else {
+		if err := json.Unmarshal(priceJSON, &priceMap); err != nil {
+			return nil, nil, fmt.Errorf("failed to parse service price: %w", err)
+		}
+	}
+
+	detailsStruct := make([]*ServiceDetails, 0, len(detailsMap))
 	for detail, duration := range detailsMap {
-		result = append(result, &ServiceDetails{
+		detailsStruct = append(detailsStruct, &ServiceDetails{
 			Detail:   detail,
 			Duration: duration,
 		})
 	}
 
-	return result, nil
+	priceStruct := make([]*ServPrice, 0, len(priceMap))
+	for detail, price := range priceMap {
+		priceStruct = append(priceStruct, &ServPrice{
+			Detail: detail,
+			Price:  price,
+		})
+	}
+
+	return detailsStruct, priceStruct, nil
 }
 
 // Получение филала в определённом городе с определённой услугой

@@ -109,6 +109,30 @@ func (m *BranchManager) GetBranchByCityServ(city string, serviceID string) ([]*B
 	return m.storage.GetBranchByCityServ(city, serviceID)
 }
 
-func (m *BranchManager) GetServiceDetails(branchServID uuid.UUID) ([]*ServiceDetails, error) {
-	return m.storage.GetServiceDetails(branchServID)
+func (m *BranchManager) GetServiceDetails(branchServID uuid.UUID) ([]*ServResponse, error) {
+	details, price, err := m.storage.GetServiceDetails(branchServID)
+	if err != nil {
+		return nil, err
+	}
+
+	priceMap := make(map[string]float32, len(price))
+	for _, p := range price {
+		priceMap[p.Detail] = p.Price
+	}
+
+	var result []*ServResponse
+	for _, d := range details {
+		// Ищем цену для текущей детали
+		pr, ok := priceMap[d.Detail]
+		if !ok {
+			return nil, fmt.Errorf("price not found for detail: %s", d.Detail)
+		}
+		result = append(result, &ServResponse{
+			Detail:   d.Detail,
+			Duration: d.Duration,
+			Price:    pr,
+		})
+	}
+
+	return result, nil
 }
