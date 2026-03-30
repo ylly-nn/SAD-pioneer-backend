@@ -161,12 +161,16 @@ definitions:
   company.AddBranchRequest:
     properties:
       address:
+        example: Улица тверская дом 1
         type: string
       city:
+        example: Москва
         type: string
       close_time:
+        example: 17:00:00+03:00
         type: string
       open_time:
+        example: 09:00:00+03:00
         type: string
     required:
     - address
@@ -372,7 +376,7 @@ definitions:
         example: мойка
         type: string
     type: object
-  order.ClientOrderResponse:
+  order.ClientOrderResponseTZ:
     properties:
       address:
         example: ул. Тверская, д. 1
@@ -381,7 +385,7 @@ definitions:
         example: Москва
         type: string
       end_moment:
-        example: "2026-03-16T11:05:00+04:00"
+        example: "2026-03-16T11:05:00+00:00"
         format: yyyy-mm-ddThh:mm:ss+(Z)hh:mm
         type: string
       name_company:
@@ -396,7 +400,7 @@ definitions:
         example: Шиномонтаж
         type: string
       start_moment:
-        example: "2026-03-16T09:30:00+04:00"
+        example: "2026-03-16T09:30:00+00:00"
         format: yyyy-mm-ddThh:mm:ss+(Z)hh:mm
         type: string
       status:
@@ -417,7 +421,7 @@ definitions:
         format: yyyy-mm-ddThh-mm-ss+hh:mm
         type: string
     type: object
-  order.DailySlots:
+  order.GetFreeTimeResponse:
     properties:
       date:
         example: "2026-03-16T00:00:00Z"
@@ -1117,6 +1121,10 @@ paths:
         name: duration
         required: true
         type: string
+      - description: Часовой пояс (например, Europe/Moscow, America/New_York)
+        in: query
+        name: timezone
+        type: string
       produces:
       - application/json
       responses:
@@ -1124,7 +1132,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/order.DailySlots'
+              $ref: '#/definitions/order.GetFreeTimeResponse'
             type: array
         "401":
           description: Unauthorized
@@ -1219,6 +1227,11 @@ paths:
   /client/orders:
     get:
       description: Возвращает все заказы, принадлежащие авторизованному клиенту.
+      parameters:
+      - description: Часовой пояс (например, Europe/Moscow, America/New_York)
+        in: query
+        name: timezone
+        type: string
       produces:
       - application/json
       responses:
@@ -1226,7 +1239,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/order.ClientOrderResponse'
+              $ref: '#/definitions/order.ClientOrderResponseTZ'
             type: array
         "401":
           description: Unauthorized

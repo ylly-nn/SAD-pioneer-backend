@@ -113,7 +113,7 @@ func (s *PostgresOrderStorage) GetBisyTimeByDate(branchID uuid.UUID, date time.T
         SELECT o.start_moment, o.end_moment
         FROM orders o
         JOIN branch_services bs ON o.service_by_branch = bs.id
-        WHERE bs.branch = $1 AND o.start_moment::date = $2::date
+        WHERE bs.branch = $1 AND o.start_moment::date = $2::date AND status != 'reject'
     `, branchID, date)
 	if err != nil {
 		return nil, fmt.Errorf("query failed: %w", err)

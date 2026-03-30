@@ -105,10 +105,10 @@ type AddUserRequest struct {
 
 // AddBranchRequest - запрос на добавление нового филиала
 type AddBranchRequest struct {
-	City      string               `json:"city" validate:"required"`
-	Address   string               `json:"address" validate:"required"`
-	OpenTime  timeparsing.TimeOnly `json:"open_time" validate:"required"`
-	CloseTime timeparsing.TimeOnly `json:"close_time" validate:"required"`
+	City      string               `json:"city" example:"Москва" validate:"required"`
+	Address   string               `json:"address" example:"Улица тверская дом 1" validate:"required"`
+	OpenTime  timeparsing.TimeOnly `json:"open_time" example:"09:00:00+03:00" validate:"required"`
+	CloseTime timeparsing.TimeOnly `json:"close_time" example:"17:00:00+03:00" validate:"required"`
 }
 
 // AddServiceToBranch - запрос на добавление новой услуги в филиал

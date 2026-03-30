@@ -822,6 +822,12 @@ const docTemplate = `{
                         "name": "duration",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Часовой пояс (например, Europe/Moscow, America/New_York)",
+                        "name": "timezone",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -830,7 +836,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/order.DailySlots"
+                                "$ref": "#/definitions/order.GetFreeTimeResponse"
                             }
                         }
                     },
@@ -985,13 +991,21 @@ const docTemplate = `{
                     "client"
                 ],
                 "summary": "Получить заказы клиента",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Часовой пояс (например, Europe/Moscow, America/New_York)",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/order.ClientOrderResponse"
+                                "$ref": "#/definitions/order.ClientOrderResponseTZ"
                             }
                         }
                     },
@@ -2117,16 +2131,20 @@ const docTemplate = `{
             ],
             "properties": {
                 "address": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Улица тверская дом 1"
                 },
                 "city": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Москва"
                 },
                 "close_time": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "17:00:00+03:00"
                 },
                 "open_time": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "09:00:00+03:00"
                 }
             }
         },
@@ -2407,7 +2425,7 @@ const docTemplate = `{
                 }
             }
         },
-        "order.ClientOrderResponse": {
+        "order.ClientOrderResponseTZ": {
             "type": "object",
             "properties": {
                 "address": {
@@ -2421,7 +2439,7 @@ const docTemplate = `{
                 "end_moment": {
                     "type": "string",
                     "format": "yyyy-mm-ddThh:mm:ss+(Z)hh:mm",
-                    "example": "2026-03-16T11:05:00+04:00"
+                    "example": "2026-03-16T11:05:00+00:00"
                 },
                 "name_company": {
                     "type": "string",
@@ -2441,7 +2459,7 @@ const docTemplate = `{
                 "start_moment": {
                     "type": "string",
                     "format": "yyyy-mm-ddThh:mm:ss+(Z)hh:mm",
-                    "example": "2026-03-16T09:30:00+04:00"
+                    "example": "2026-03-16T09:30:00+00:00"
                 },
                 "status": {
                     "allOf": [
@@ -2471,7 +2489,7 @@ const docTemplate = `{
                 }
             }
         },
-        "order.DailySlots": {
+        "order.GetFreeTimeResponse": {
             "type": "object",
             "properties": {
                 "date": {

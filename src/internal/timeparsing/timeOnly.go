@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -73,4 +74,44 @@ func (t *TimeOnly) UnmarshalJSON(data []byte) error {
 	}
 
 	return fmt.Errorf("invalid time format: %s", s)
+}
+
+func ParseLocation(tz string) (*time.Location, error) {
+	// Пытаемся как IANA-зону
+	if loc, err := time.LoadLocation(tz); err == nil {
+		return loc, nil
+	}
+	// Пытаемся как фиксированное смещение
+	offset, err := ParseOffset(tz)
+	if err != nil {
+		return nil, err
+	}
+	return time.FixedZone(tz, offset), nil
+}
+
+// parseOffset разбирает строку вида "+03:00" или "-05:00" и возвращает смещение в секундах.
+func ParseOffset(s string) (int, error) {
+	if len(s) < 3 {
+		return 0, fmt.Errorf("invalid offset")
+	}
+	sign := 1
+	if s[0] == '-' {
+		sign = -1
+	} else if s[0] != '+' {
+		return 0, fmt.Errorf("invalid offset sign")
+	}
+	s = s[1:]
+	parts := strings.SplitN(s, ":", 2)
+	if len(parts) != 2 {
+		return 0, fmt.Errorf("offset must be HH:MM")
+	}
+	hours, err := strconv.Atoi(parts[0])
+	if err != nil || hours < 0 || hours > 23 {
+		return 0, fmt.Errorf("invalid hour")
+	}
+	mins, err := strconv.Atoi(parts[1])
+	if err != nil || mins < 0 || mins > 59 {
+		return 0, fmt.Errorf("invalid minute")
+	}
+	return sign * (hours*3600 + mins*60), nil
 }

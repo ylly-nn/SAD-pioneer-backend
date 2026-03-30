@@ -9,6 +9,15 @@ import (
 
 type OrderStatus string
 
+// UTCTime — обёртка над time.Time для форматирования с +00:00.
+type UTCTime time.Time
+
+// MarshalJSON реализует json.Marshaler, возвращая время в UTC в формате RFC3339 с +00:00.
+func (t UTCTime) MarshalJSON() ([]byte, error) {
+	utc := time.Time(t).UTC()
+	return []byte(`"` + utc.Format("2006-01-02T15:04:05+00:00") + `"`), nil
+}
+
 const (
 	OrderStatusCreate  OrderStatus = "create"  // заказ создан
 	OrderStatusApprove OrderStatus = "approve" // заказ подтверждён
@@ -42,8 +51,8 @@ type DailyIntervals struct {
 // DailySlots содержит дату и список времён начала доступных слотов фиксированной длительности.
 // Используется для возврата данных из GetFreeTimeForWeek
 type DailySlots struct {
-	Date      time.Time   `json:"date" example:"2026-03-16T00:00:00Z" format:"yyyy-mm-ddT00:00:00Z"`
-	Intervals []time.Time `json:"intervals" swagertype:"array" example:"[2026-03-17T10:35:00+04:00, 2026-03-17T10:50:00+04:00, 2026-03-17T11:05:00+04:00]"`
+	Date      time.Time `json:"date" example:"2026-03-16T00:00:00Z" format:"yyyy-mm-ddT00:00:00Z"`
+	Intervals []UTCTime `json:"intervals" swagertype:"array" example:"[2026-03-17T10:35:00+00:00, 2026-03-17T10:50:00+00:00, 2026-03-17T11:05:00+00:00]"`
 }
 
 // OpenCloseBranch содержит время открытия и закрытия филиала
@@ -75,15 +84,33 @@ type FullOrder struct {
 	OrderDetails    json.RawMessage `json:"order_details,omitempty"`
 }
 
-// ClientOrderResponse - упрощённая информация о заказе для клиента
-type ClientOrderResponse struct {
+// ClientOrder - упрощённая информация о заказе для клиента
+type ClientOrder struct {
 	ID           uuid.UUID       `json:"order_id" example:"83817fd0-ffd0-478b-b1ae-b082e8581830"`
 	NameCompany  string          `json:"name_company" example:"ООО \"Ромашка\""`
 	City         string          `json:"city" example:"Москва"`
 	Address      string          `json:"address" example:"ул. Тверская, д. 1"`
 	Service      string          `json:"service" example:"Шиномонтаж"`
-	StartMoment  time.Time       `json:"start_moment" example:"2026-03-16T09:30:00+04:00" format:"yyyy-mm-ddThh:mm:ss+(Z)hh:mm"`
-	EndMoment    *time.Time      `json:"end_moment" example:"2026-03-16T11:05:00+04:00" format:"yyyy-mm-ddThh:mm:ss+(Z)hh:mm"`
+	StartMoment  UTCTime         `json:"start_moment" example:"2026-03-16T09:30:00+00:00" format:"yyyy-mm-ddThh:mm:ss+(Z)hh:mm"`
+	EndMoment    *UTCTime        `json:"end_moment" example:"2026-03-16T11:05:00+00:00" format:"yyyy-mm-ddThh:mm:ss+(Z)hh:mm"`
+	Status       OrderStatus     `json:"status" example:"create"`
+	OrderDetails json.RawMessage `json:"order_details" swaggertype:"object"`
+}
+
+// Используется для отдачи пользователю в обработчике Get /branch/freetime
+type GetFreeTimeResponse struct {
+	Date      string   `json:"date" example:"2026-03-16T00:00:00Z" format:"yyyy-mm-ddT00:00:00Z"`
+	Intervals []string `json:"intervals"  example:"[2026-03-17T10:35:00+04:00, 2026-03-17T10:50:00+04:00, 2026-03-17T11:05:00+04:00]"`
+}
+
+type ClientOrderResponseTZ struct {
+	ID           uuid.UUID       `json:"order_id" example:"83817fd0-ffd0-478b-b1ae-b082e8581830"`
+	NameCompany  string          `json:"name_company" example:"ООО \"Ромашка\""`
+	City         string          `json:"city" example:"Москва"`
+	Address      string          `json:"address" example:"ул. Тверская, д. 1"`
+	Service      string          `json:"service" example:"Шиномонтаж"`
+	StartMoment  time.Time       `json:"start_moment" example:"2026-03-16T09:30:00+00:00" format:"yyyy-mm-ddThh:mm:ss+(Z)hh:mm"`
+	EndMoment    *time.Time      `json:"end_moment" example:"2026-03-16T11:05:00+00:00" format:"yyyy-mm-ddThh:mm:ss+(Z)hh:mm"`
 	Status       OrderStatus     `json:"status" example:"create"`
 	OrderDetails json.RawMessage `json:"order_details" swaggertype:"object"`
 }

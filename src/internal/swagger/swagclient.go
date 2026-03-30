@@ -13,13 +13,14 @@ import (
 // @Tags         client
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {array}  order.ClientOrderResponse
+// @Param        timezone     query string false "Часовой пояс (например, Europe/Moscow, America/New_York)"
+// @Success      200  {array}  order.ClientOrderResponseTZ
 // @Failure      401  {string}  string
 // @Failure      500  {string}  string  "Internal server error"
 // @Router       /client/orders [get]
 func getClientOrders() {
 	// фиктивное использование, чтобы избежать ошибки "imported and not used"
-	var _ = order.ClientOrderResponse{}
+	var _ = order.ClientOrderResponseTZ{}
 }
 
 // GetServices - возвращает список сервисов
@@ -105,12 +106,13 @@ func getServiceDetails() {
 // @Param        branch_id    query string true  "ID Филиала"
 // @Param        date query string true  "Дата начала недели формат yyyy-mm-dd"
 // @Param        duration query string true  "Общая длительность услуги в минутах"
-// @Success      200  {array} order.DailySlots
+// @Param        timezone     query string false "Часовой пояс (например, Europe/Moscow, America/New_York)"
+// @Success      200  {array} order.GetFreeTimeResponse
 // @Failure      401  {string} string
 // @Failure      500  {string} string  "Internal server error"
 // @Router       /branch/freetime [get]
 func getBranchFreeTime() {
-	var _ = order.DailySlots{}
+	var _ = order.GetFreeTimeResponse{}
 }
 
 // CreateOrder создаёт новый заказ

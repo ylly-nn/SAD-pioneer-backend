@@ -165,8 +165,11 @@ func (m *OrderManager) GetFreeTimeForWeek(branchID uuid.UUID, startDate time.Tim
 			openClose.CloseTimeBranch.Hour(), openClose.CloseTimeBranch.Minute(),
 			openClose.CloseTimeBranch.Second(), 0, openClose.CloseTimeBranch.Location())
 
-		slots := computeFreeSlots(openTime, closeTime, busy, duration)
-
+		slotsTime := computeFreeSlots(openTime, closeTime, busy, duration)
+		slots := make([]UTCTime, len(slotsTime))
+		for i, t := range slotsTime {
+			slots[i] = UTCTime(t)
+		}
 		weekFree = append(weekFree, DailySlots{
 			Date:      day,
 			Intervals: slots,
@@ -246,7 +249,7 @@ func (m *OrderManager) GetFullAllOrders() ([]*FullOrder, error) {
 }
 
 // возвращает список заказов опредеоённого киента
-func (m *OrderManager) GetByClient(email string) ([]*ClientOrderResponse, error) {
+func (m *OrderManager) GetByClient(email string) ([]*ClientOrder, error) {
 	if email == "" {
 		return nil, ErrEmptyEmail
 	}
@@ -255,16 +258,23 @@ func (m *OrderManager) GetByClient(email string) ([]*ClientOrderResponse, error)
 	if err != nil {
 		return nil, err
 	}
-	var responses []*ClientOrderResponse
+	var responses []*ClientOrder
 	for _, fo := range fullOrders {
-		responses = append(responses, &ClientOrderResponse{
+
+		start := UTCTime(fo.StartMoment)
+		var end *UTCTime
+		if fo.EndMoment != nil {
+			utcEnd := UTCTime(*fo.EndMoment)
+			end = &utcEnd
+		}
+		responses = append(responses, &ClientOrder{
 			ID:           fo.ID,
 			NameCompany:  fo.NameCompany,
 			City:         fo.City,
 			Address:      fo.Address,
 			Service:      fo.Service,
-			StartMoment:  fo.StartMoment,
-			EndMoment:    fo.EndMoment,
+			StartMoment:  start,
+			EndMoment:    end,
 			Status:       fo.Status,
 			OrderDetails: fo.OrderDetails,
 		})

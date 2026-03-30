@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"src/internal/timeparsing"
 	"strconv"
 	"time"
 
@@ -155,8 +156,48 @@ func (h *Handler) GetClientOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	tzParam := r.URL.Query().Get("timezone")
+
+	// Если tz не передан исходная структуру (с UTCTime)
+	if tzParam == "" {
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(orders); err != nil {
+			log.Printf("GetClientOrders encode error: %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	loc, err := timeparsing.ParseLocation(tzParam)
+	if err != nil {
+		http.Error(w, "invalid timezone format. Use IANA name (e.g., Europe/Moscow) or offset (e.g., +03:00)", http.StatusBadRequest)
+		return
+	}
+
+	// Преобразуем каждый заказ в ClientOrderResponseTZ с временем в нужном поясе
+	response := make([]*ClientOrderResponseTZ, len(orders))
+	for i, o := range orders {
+		// Преобразуем UTCTime -> time.Time и меняем зону
+		start := time.Time(o.StartMoment).In(loc)
+		tzOrder := &ClientOrderResponseTZ{
+			ID:           o.ID,
+			NameCompany:  o.NameCompany,
+			City:         o.City,
+			Address:      o.Address,
+			Service:      o.Service,
+			StartMoment:  start,
+			Status:       o.Status,
+			OrderDetails: o.OrderDetails,
+		}
+		if o.EndMoment != nil {
+			end := time.Time(*o.EndMoment).In(loc)
+			tzOrder.EndMoment = &end
+		}
+		response[i] = tzOrder
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(orders); err != nil {
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("GetClientOrders encode error: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
