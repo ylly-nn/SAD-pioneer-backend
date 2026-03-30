@@ -9,6 +9,9 @@ definitions:
     type: object
   admin.PartnerRequest:
     properties:
+      created_at:
+        example: "2026-03-30T06:06:47.181805Z"
+        type: string
       email:
         example: ivan@example.com
         type: string
@@ -22,6 +25,9 @@ definitions:
         type: string
       kpp:
         example: "123456789"
+        type: string
+      last_used:
+        example: "2026-03-30T06:07:27.657019Z"
         type: string
       name:
         example: Иван
@@ -468,42 +474,39 @@ definitions:
     - OrderStatusCreate
     - OrderStatusApprove
     - OrderStatusReject
-  partners.PartnerRequestRequest:
+  partners.PartnerRequest:
     properties:
+      created_at:
+        example: "2026-03-30T06:06:47.181805Z"
+        type: string
       email:
-        example: ivan@example.com
         type: string
       info:
-        example: Дополнительная информация
         type: string
       inn:
-        example: "123456789012"
         type: string
       kpp:
-        example: "123456789"
+        type: string
+      last_used:
+        example: "2026-03-30T06:07:27.657019Z"
         type: string
       name:
-        example: Иван
         type: string
       ogrn:
-        example: "1234567890123"
         type: string
       org_name:
-        example: ООО Ромашка
         type: string
       org_short_name:
-        example: Ромашка
         type: string
       patronymic:
-        example: Иванович
         type: string
       phone:
-        example: "9871111111"
         type: string
       status:
         type: string
       surname:
-        example: Иванов
+        type: string
+      user_email:
         type: string
     type: object
   service.ServiceResponse:
@@ -1746,7 +1749,7 @@ paths:
         "200":
           description: Статус заявки
           schema:
-            $ref: '#/definitions/partners.PartnerRequestRequest'
+            $ref: '#/definitions/partners.PartnerRequest'
         "401":
           description: 'Unauthorized | Invalid token: email not found'
           schema:
@@ -1771,7 +1774,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/partners.PartnerRequestRequest'
+          $ref: '#/definitions/partners.PartnerRequest'
       produces:
       - application/json
       responses:

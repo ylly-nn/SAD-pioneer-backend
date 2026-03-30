@@ -1774,7 +1774,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Статус заявки",
                         "schema": {
-                            "$ref": "#/definitions/partners.PartnerRequestRequest"
+                            "$ref": "#/definitions/partners.PartnerRequest"
                         }
                     },
                     "401": {
@@ -1815,7 +1815,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/partners.PartnerRequestRequest"
+                            "$ref": "#/definitions/partners.PartnerRequest"
                         }
                     }
                 ],
@@ -1900,6 +1900,10 @@ const docTemplate = `{
         "admin.PartnerRequest": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2026-03-30T06:06:47.181805Z"
+                },
                 "email": {
                     "type": "string",
                     "example": "ivan@example.com"
@@ -1918,6 +1922,10 @@ const docTemplate = `{
                 "kpp": {
                     "type": "string",
                     "example": "123456789"
+                },
+                "last_used": {
+                    "type": "string",
+                    "example": "2026-03-30T06:07:27.657019Z"
                 },
                 "name": {
                     "type": "string",
@@ -2543,55 +2551,55 @@ const docTemplate = `{
                 "OrderStatusReject"
             ]
         },
-        "partners.PartnerRequestRequest": {
+        "partners.PartnerRequest": {
             "type": "object",
             "properties": {
-                "email": {
+                "created_at": {
                     "type": "string",
-                    "example": "ivan@example.com"
+                    "example": "2026-03-30T06:06:47.181805Z"
+                },
+                "email": {
+                    "type": "string"
                 },
                 "info": {
-                    "type": "string",
-                    "example": "Дополнительная информация"
+                    "type": "string"
                 },
                 "inn": {
-                    "type": "string",
-                    "example": "123456789012"
+                    "type": "string"
                 },
                 "kpp": {
+                    "type": "string"
+                },
+                "last_used": {
                     "type": "string",
-                    "example": "123456789"
+                    "example": "2026-03-30T06:07:27.657019Z"
                 },
                 "name": {
-                    "type": "string",
-                    "example": "Иван"
+                    "type": "string"
                 },
                 "ogrn": {
-                    "type": "string",
-                    "example": "1234567890123"
+                    "type": "string"
                 },
                 "org_name": {
-                    "type": "string",
-                    "example": "ООО Ромашка"
+                    "type": "string"
                 },
                 "org_short_name": {
-                    "type": "string",
-                    "example": "Ромашка"
+                    "type": "string"
                 },
                 "patronymic": {
-                    "type": "string",
-                    "example": "Иванович"
+                    "type": "string"
                 },
                 "phone": {
-                    "type": "string",
-                    "example": "9871111111"
+                    "type": "string"
                 },
                 "status": {
                     "type": "string"
                 },
                 "surname": {
-                    "type": "string",
-                    "example": "Иванов"
+                    "type": "string"
+                },
+                "user_email": {
+                    "type": "string"
                 }
             }
         },

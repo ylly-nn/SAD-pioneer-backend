@@ -26,8 +26,8 @@ type PartnerRequest struct {
 	Phone      string `json:"phone" db:"phone_number" example:"9990000000"`
 	Info       string `json:"info,omitempty" db:"info" example:"Дополнительная информация"`
 
-	CreatedAt time.Time  `json:"created_at" db:"created_at"`
-	LastUsed  *time.Time `json:"last_used" db:"last_used"`
+	CreatedAt time.Time  `json:"created_at" example:"2026-03-30T06:06:47.181805Z" db:"created_at"`
+	LastUsed  *time.Time `json:"last_used" example:"2026-03-30T06:07:27.657019Z" db:"last_used"`
 }
 
 // Company - данные организации

@@ -212,12 +212,12 @@ func deleteServDetail() {
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
-// @Success      200  {object}  partners.PartnerRequestRequest  "Статус заявки"
+// @Success      200  {object}  partners.PartnerRequest  "Статус заявки"
 // @Failure      401  {string}  string  "Unauthorized | Invalid token: email not found"
 // @Failure      404  {string}  string  "no request found for user: <email>"
 // @Router       /partner/request [get]
 func getPartnerRequestStatus() {
-	var _ = partners.PartnerRequestRequest{}
+	var _ = partners.PartnerRequest{}
 }
 
 // createPartnerRequest создаёт заявку на регистрацию организации
@@ -227,13 +227,13 @@ func getPartnerRequestStatus() {
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
-// @Param        request  body      partners.PartnerRequestRequest  true  "Данные заявки"
+// @Param        request  body      partners.PartnerRequest true  "Данные заявки"
 // @Success      201      {object}  map[string]string  "message: Partner request created successfully"
 // @Failure      400      {string}  string  "Invalid request body | validation error | user not found | company with this INN already exists"
 // @Failure      401      {string}  string  "Unauthorized | Invalid token: email not found"
 // @Router       /partner/request [post]
 func createPartnerRequest() {
-	var _ = partners.PartnerRequestRequest{}
+	var _ = partners.PartnerRequest{}
 }
 
 // addServiceToBranch добавляет услугу в филиал
