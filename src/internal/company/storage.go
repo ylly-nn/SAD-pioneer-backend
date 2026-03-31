@@ -54,7 +54,7 @@ type CompanyStorage interface {
 
 	GetServicesByBranch(branchID uuid.UUID) ([]*ServiceInBranch, error)
 
-	GetBranchServByID(branchServID uuid.UUID) (BranchServ, error)
+	GetBranchServByID(branchServID uuid.UUID) (*BranchServ, error)
 
 	AddUserToPartners(email, inn string) error
 
@@ -189,7 +189,7 @@ func (s *PostgresCompanyStorage) UpdateOrderStatus(orderID uuid.UUID, status Ord
 	row := s.DB.QueryRow(`
 		SELECT 
 			o.id, o.users, o.service_by_branch, s.name,
-			o.start_moment, o.end_moment, o.order_details, o.status
+			o.start_moment, o.end_moment, o.order_details, o.status, o.price, o.sum
 		FROM orders o
 		JOIN branch_services bs ON bs.id = o.service_by_branch
 		JOIN services s ON s.id = bs.service
@@ -198,6 +198,7 @@ func (s *PostgresCompanyStorage) UpdateOrderStatus(orderID uuid.UUID, status Ord
 
 	var ord CompanyOrder
 	var detailsRaw json.RawMessage
+	var priceRaw json.RawMessage
 
 	err = row.Scan(
 		&ord.ID,
@@ -208,6 +209,8 @@ func (s *PostgresCompanyStorage) UpdateOrderStatus(orderID uuid.UUID, status Ord
 		&ord.EndMoment,
 		&detailsRaw,
 		&ord.Status,
+		&priceRaw,
+		&ord.Sum,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -216,17 +219,35 @@ func (s *PostgresCompanyStorage) UpdateOrderStatus(orderID uuid.UUID, status Ord
 		return nil, fmt.Errorf("scan updated order: %w", err)
 	}
 
+	var detailsMap map[string]int
 	if len(detailsRaw) > 0 {
-		var temp map[string]int
-		if err := json.Unmarshal(detailsRaw, &temp); err != nil {
+		if err := json.Unmarshal(detailsRaw, &detailsMap); err != nil {
 			return nil, fmt.Errorf("unmarshal order details: %w", err)
 		}
-		detailsSlice := make([]ServDetails, 0, len(temp))
-		for k, v := range temp {
-			detailsSlice = append(detailsSlice, ServDetails{Detail: k, Duration: v})
-		}
-		ord.OrderDetails = detailsSlice
+	} else {
+		detailsMap = make(map[string]int)
 	}
+
+	var priceMap map[string]float32
+	if len(priceRaw) > 0 {
+		if err := json.Unmarshal(priceRaw, &priceMap); err != nil {
+			return nil, fmt.Errorf("unmarshal order price: %w", err)
+		}
+	} else {
+		priceMap = make(map[string]float32)
+	}
+
+	// Формирование ServUpdateResponse с объединением длительности и цены
+	detailsSlice := make([]ServUpdateResponse, 0, len(detailsMap))
+	for detail, duration := range detailsMap {
+		price := priceMap[detail] // если цены нет, будет 0
+		detailsSlice = append(detailsSlice, ServUpdateResponse{
+			Detail:   detail,
+			Duration: duration,
+			Price:    price,
+		})
+	}
+	ord.OrderDetails = detailsSlice
 
 	return &ord, nil
 }
@@ -234,8 +255,8 @@ func (s *PostgresCompanyStorage) UpdateOrderStatus(orderID uuid.UUID, status Ord
 // GetOrdersByBranch возвращает все заказы филиала по его ID.
 func (s *PostgresCompanyStorage) GetOrdersByBranch(branchID uuid.UUID) ([]*CompanyOrder, error) {
 	rows, err := s.DB.Query(`
-        SELECT  o.id, o.users, o.service_by_branch, s.name, 
-        	o.start_moment, o.end_moment, o.order_details, o.status
+        SELECT o.id, o.users, o.service_by_branch, s.name, 
+               o.start_moment, o.end_moment, o.order_details, o.status, o.price, o.sum
         FROM orders o
         JOIN branch_services bs ON bs.id = o.service_by_branch
         JOIN branches b ON b.id = bs.branch
@@ -251,6 +272,7 @@ func (s *PostgresCompanyStorage) GetOrdersByBranch(branchID uuid.UUID) ([]*Compa
 	for rows.Next() {
 		var ord CompanyOrder
 		var detailsRaw json.RawMessage
+		var priceRaw json.RawMessage
 
 		err := rows.Scan(
 			&ord.ID,
@@ -261,22 +283,42 @@ func (s *PostgresCompanyStorage) GetOrdersByBranch(branchID uuid.UUID) ([]*Compa
 			&ord.EndMoment,
 			&detailsRaw,
 			&ord.Status,
+			&priceRaw,
+			&ord.Sum,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("scan order: %w", err)
 		}
 
+		var detailsMap map[string]int
 		if len(detailsRaw) > 0 {
-			var temp map[string]int
-			if err := json.Unmarshal(detailsRaw, &temp); err != nil {
+			if err := json.Unmarshal(detailsRaw, &detailsMap); err != nil {
 				return nil, fmt.Errorf("unmarshal order details: %w", err)
 			}
-			detailsSlice := make([]ServDetails, 0, len(temp))
-			for k, v := range temp {
-				detailsSlice = append(detailsSlice, ServDetails{Detail: k, Duration: v})
-			}
-			ord.OrderDetails = detailsSlice
+		} else {
+			detailsMap = make(map[string]int)
 		}
+
+		var priceMap map[string]float32
+		if len(priceRaw) > 0 {
+			if err := json.Unmarshal(priceRaw, &priceMap); err != nil {
+				return nil, fmt.Errorf("unmarshal order price: %w", err)
+			}
+		} else {
+			priceMap = make(map[string]float32)
+		}
+
+		// Формирование ServUpdateResponse с объединением длительности и цены
+		detailsSlice := make([]ServUpdateResponse, 0, len(detailsMap))
+		for detail, duration := range detailsMap {
+			price := priceMap[detail]
+			detailsSlice = append(detailsSlice, ServUpdateResponse{
+				Detail:   detail,
+				Duration: duration,
+				Price:    price,
+			})
+		}
+		ord.OrderDetails = detailsSlice
 
 		orders = append(orders, &ord)
 	}
@@ -292,26 +334,55 @@ func (s *PostgresCompanyStorage) GetOrdersByBranch(branchID uuid.UUID) ([]*Compa
 }
 
 // Получение из бд branch_serv по id если нет, ошибка - ErrBranchServNotFound
-func (s *PostgresCompanyStorage) GetBranchServByID(branchServID uuid.UUID) (BranchServ, error) {
+func (s *PostgresCompanyStorage) GetBranchServByID(branchServID uuid.UUID) (*BranchServ, error) {
 	var bs BranchServ
-	var details []byte
+	var detailsRaw []byte
+	var priceRaw []byte
 
 	row := s.DB.QueryRow(`
-        SELECT id, branch, service, service_detalis
+        SELECT id, branch, service, service_detalis, price
         FROM branch_services
         WHERE id = $1
     `, branchServID)
 
-	err := row.Scan(&bs.ID, &bs.Branch, &bs.Service, &details)
+	err := row.Scan(&bs.ID, &bs.Branch, &bs.Service, &detailsRaw, &priceRaw)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return BranchServ{}, ErrBranchServNotFound
+			return nil, ErrBranchServNotFound
 		}
-		return BranchServ{}, err
+		return nil, err
 	}
 
-	bs.ServiceDetails = json.RawMessage(details)
-	return bs, nil
+	var detailsMap map[string]int
+	if len(detailsRaw) > 0 {
+		if err := json.Unmarshal(detailsRaw, &detailsMap); err != nil {
+			return nil, fmt.Errorf("unmarshal service details: %w", err)
+		}
+	} else {
+		detailsMap = make(map[string]int)
+	}
+
+	var priceMap map[string]float32
+	if len(priceRaw) > 0 {
+		if err := json.Unmarshal(priceRaw, &priceMap); err != nil {
+			return nil, fmt.Errorf("unmarshal price: %w", err)
+		}
+	} else {
+		priceMap = make(map[string]float32)
+	}
+
+	serviceDetails := make([]ServUpdateResponse, 0, len(detailsMap))
+	for detail, duration := range detailsMap {
+		price := priceMap[detail] // если цены нет, будет 0
+		serviceDetails = append(serviceDetails, ServUpdateResponse{
+			Detail:   detail,
+			Duration: duration,
+			Price:    price,
+		})
+	}
+	bs.ServiceDetails = serviceDetails
+
+	return &bs, nil
 }
 
 // Получение из бд филиала по его id

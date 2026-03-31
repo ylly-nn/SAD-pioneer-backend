@@ -172,23 +172,23 @@ func (m *CompanyManager) GetBranchByIdEmail(branch_id uuid.UUID, email string) (
 // Возвращаемые ошибки:  ErrUserNotPartner, ErrBranchesNotFound
 // ErrBranchServNotFound, ErrBranchServNotAvailable
 // ErrBranchServNotAvailable, ErrServiceDetailsInvalid
-func (m *CompanyManager) GetServDetailsByBranchServId(branchServID uuid.UUID, email string) ([]*ServDetails, error) {
+func (m *CompanyManager) GetServDetailsByBranchServId(branchServID uuid.UUID, email string) ([]*ServUpdateResponse, error) {
 	isPartner, err := m.UserIsPartner(email)
 	if err != nil {
-		return []*ServDetails{}, err
+		return nil, err
 	}
 	if isPartner.IsPartner != true {
-		return []*ServDetails{}, ErrUserNotPartner
+		return nil, ErrUserNotPartner
 	}
 
 	branchServ, err := m.storage.GetBranchServByID(branchServID)
 	if err != nil {
-		return []*ServDetails{}, err
+		return nil, err
 	}
 
 	companyBranch, err := m.storage.GetBranchesByInn(isPartner.Inn)
 	if err != nil {
-		return []*ServDetails{}, err
+		return nil, err
 	}
 
 	//создание массива из id филиалов компании
@@ -201,25 +201,18 @@ func (m *CompanyManager) GetServDetailsByBranchServId(branchServID uuid.UUID, em
 	found := slices.Contains(branchIDs, branchServ.Branch)
 
 	if !found {
-		return []*ServDetails{}, ErrBranchServNotAvailable
+		return nil, ErrBranchServNotAvailable
 	}
 
-	if len(branchServ.ServiceDetails) == 0 || string(branchServ.ServiceDetails) == "null" {
-		return []*ServDetails{}, ErrBranchServIsNull
+	if len(branchServ.ServiceDetails) == 0 {
+		return nil, ErrBranchServIsNull
 	}
 
-	var detailsMap map[string]int
-	if err := json.Unmarshal(branchServ.ServiceDetails, &detailsMap); err != nil {
-		return nil, ErrServiceDetailsInvalid
+	result := make([]*ServUpdateResponse, len(branchServ.ServiceDetails))
+	for i := range branchServ.ServiceDetails {
+		result[i] = &branchServ.ServiceDetails[i]
 	}
 
-	var result []*ServDetails
-	for detail, duration := range detailsMap {
-		result = append(result, &ServDetails{
-			Detail:   detail,
-			Duration: duration,
-		})
-	}
 	return result, nil
 
 }

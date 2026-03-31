@@ -1,7 +1,6 @@
 package company
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -79,23 +78,12 @@ type ServiceInBranch struct {
 	ServiceName  string    `json:"service_name" example:"мойка" `
 }
 
-// Струтура для ответа на Get /company/branch/service/{branchserID}
-type ServDetails struct {
-	Detail   string `json:"detail" example:"Мойка салона"`
-	Duration int    `json:"duration_min" example:"40"`
-}
-
-type ServPrice struct {
-	Detail string  `json:"detail" example:"Мойка салона"`
-	Price  float32 `json:"price" example:"560.12"`
-}
-
 // соответствует таблице branch_serv
 type BranchServ struct {
-	ID             uuid.UUID       `json:"id"`
-	Branch         uuid.UUID       `json:"branch"`
-	Service        uuid.UUID       `json:"service"`
-	ServiceDetails json.RawMessage `json:"service_detalis"`
+	ID             uuid.UUID            `json:"id"`
+	Branch         uuid.UUID            `json:"branch"`
+	Service        uuid.UUID            `json:"service"`
+	ServiceDetails []ServUpdateResponse `json:"service_detalis"`
 }
 
 // AddUserRequest - запрос на добавление нового пользователя
@@ -125,14 +113,15 @@ type CompanyBranchOrderResponse struct {
 }
 
 type CompanyOrder struct {
-	ID              uuid.UUID   `json:"id" example:"e77fd339-9478-4375-82c1-215936a68b8a"`
-	Users           string      `json:"users" example:"ex@mail.ru"`
-	ServiceByBranch uuid.UUID   `json:"service_by_branch" example:"917e77fa-1672-4dfb-8507-d5755b31ebb3"`
-	NameService     string      `json:"name_service" example:"автомойка"`
-	StartMoment     time.Time   `json:"start_moment" example:"2026-04-16T05:00:00Z"`
-	EndMoment       *time.Time  `json:"end_moment,omitempty" example:"2026-04-16T05:20:00Z"`
-	Status          OrderStatus `json:"status" example:"create"`
-	OrderDetails    []ServDetails
+	ID              uuid.UUID            `json:"id" example:"e77fd339-9478-4375-82c1-215936a68b8a"`
+	Users           string               `json:"users" example:"ex@mail.ru"`
+	ServiceByBranch uuid.UUID            `json:"service_by_branch" example:"917e77fa-1672-4dfb-8507-d5755b31ebb3"`
+	NameService     string               `json:"name_service" example:"автомойка"`
+	StartMoment     time.Time            `json:"start_moment" example:"2026-04-16T05:00:00Z"`
+	EndMoment       *time.Time           `json:"end_moment,omitempty" example:"2026-04-16T05:20:00Z"`
+	Status          OrderStatus          `json:"status" example:"create"`
+	OrderDetails    []ServUpdateResponse `json:"order_details"`
+	Sum             float32              `json:"sum" example:"560.12"`
 }
 
 // Запрос для обработчика для добавления детали
@@ -152,4 +141,15 @@ type ServUpdateResponse struct {
 	Detail   string  `json:"detail" example:"Мойка салона"`
 	Duration int     `json:"duration_min" example:"40"`
 	Price    float32 `json:"price" example:"560.12"`
+}
+
+// Струтура для ответа на Get /company/branch/service/{branchserID}
+type ServDetails struct {
+	Detail   string `json:"detail" example:"Мойка салона"`
+	Duration int    `json:"duration_min" example:"40"`
+}
+
+type ServPrice struct {
+	Detail string  `json:"detail" example:"Мойка салона"`
+	Price  float32 `json:"price" example:"560.12"`
 }

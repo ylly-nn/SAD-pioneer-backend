@@ -1386,7 +1386,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Детали услуги (если данные отсутствуют, возвращается null)",
                         "schema": {
-                            "$ref": "#/definitions/company.ServDetails"
+                            "$ref": "#/definitions/company.ServUpdateResponse"
                         }
                     },
                     "400": {
@@ -2306,10 +2306,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "автомойка"
                 },
-                "orderDetails": {
+                "order_details": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/company.ServDetails"
+                        "$ref": "#/definitions/company.ServUpdateResponse"
                     }
                 },
                 "service_by_branch": {
@@ -2327,6 +2327,10 @@ const docTemplate = `{
                         }
                     ],
                     "example": "create"
+                },
+                "sum": {
+                    "type": "number",
+                    "example": 560.12
                 },
                 "users": {
                     "type": "string",
@@ -2381,19 +2385,6 @@ const docTemplate = `{
                 "OrderStatusApprove",
                 "OrderStatusReject"
             ]
-        },
-        "company.ServDetails": {
-            "type": "object",
-            "properties": {
-                "detail": {
-                    "type": "string",
-                    "example": "Мойка салона"
-                },
-                "duration_min": {
-                    "type": "integer",
-                    "example": 40
-                }
-            }
         },
         "company.ServUpdateResponse": {
             "type": "object",

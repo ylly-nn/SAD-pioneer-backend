@@ -292,9 +292,9 @@ definitions:
       name_service:
         example: автомойка
         type: string
-      orderDetails:
+      order_details:
         items:
-          $ref: '#/definitions/company.ServDetails'
+          $ref: '#/definitions/company.ServUpdateResponse'
         type: array
       service_by_branch:
         example: 917e77fa-1672-4dfb-8507-d5755b31ebb3
@@ -306,6 +306,9 @@ definitions:
         allOf:
         - $ref: '#/definitions/company.OrderStatus'
         example: create
+      sum:
+        example: 560.12
+        type: number
       users:
         example: ex@mail.ru
         type: string
@@ -346,15 +349,6 @@ definitions:
     - OrderStatusCreate
     - OrderStatusApprove
     - OrderStatusReject
-  company.ServDetails:
-    properties:
-      detail:
-        example: Мойка салона
-        type: string
-      duration_min:
-        example: 40
-        type: integer
-    type: object
   company.ServUpdateResponse:
     properties:
       detail:
@@ -1427,7 +1421,7 @@ paths:
         "200":
           description: Детали услуги (если данные отсутствуют, возвращается null)
           schema:
-            $ref: '#/definitions/company.ServDetails'
+            $ref: '#/definitions/company.ServUpdateResponse'
         "400":
           description: invalid branch service ID или invalid service details format
           schema:
