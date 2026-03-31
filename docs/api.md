@@ -57,6 +57,57 @@ body:
 }
 ~~~
 ---
+### POST /auth/forgot-password
+Запрос на отправление кода для восстановления пароля
+
+body:
+~~~
+{
+    "email": "email@mail.ru"
+}
+~~~
+Пример успешного ответа
+~~~
+{
+    "email": "email@mail.ru",
+    "message":"Reset code sent to email"
+}
+~~~
+---
+### POST /auth/verify-reset-code
+Подтверждение кода для восстановления пароля
+
+body:
+~~~
+{
+    "email": "email@mail.ru",
+    "code": "000000"
+}
+~~~
+Пример успешного ответа
+~~~
+{
+    "message":"Code verified successfully"
+}
+~~~
+---
+### POST /auth/set-password
+Установка нового пароля
+
+body:
+~~~
+{
+    "email": "email@mail.ru",
+    "new_password": "new_password"
+}
+~~~
+Пример успешного ответа
+~~~
+{
+    "message":"Password reset successfully"
+}
+~~~
+---
 ### POST /auth/logout
 Выход из системы
 
