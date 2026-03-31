@@ -80,6 +80,9 @@ func New(authMiddleware *middleware.AuthMiddleware, adminMiddleware *middleware.
 		r.Post("/login", authHandler.Login)
 		r.Post("/refresh", authHandler.Refresh)
 		r.Post("/logout", authHandler.Logout)
+		r.Post("/forgot-password", authHandler.ForgotPassword)
+		r.Post("/verify-reset-code", authHandler.VerifyResetCode)
+		r.Post("/set-password", authHandler.SetPassword)
 	})
 
 	r.Route("/branch", func(r chi.Router) {

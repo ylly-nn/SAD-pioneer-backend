@@ -55,7 +55,7 @@ func SendValidationError(w http.ResponseWriter, err error) {
 		switch field {
 		case "Email":
 			fields["email"] = getEmailErrorMessage(e)
-		case "Password":
+		case "Password", "NewPassword":
 			fields["password"] = getPasswordErrorMessage(e)
 		case "ConfirmPassword":
 			fields["confirm_password"] = "Пароли не совпадают"

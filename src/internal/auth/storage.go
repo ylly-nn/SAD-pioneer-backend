@@ -285,3 +285,89 @@ func (s *MemoryVerificationStorage) cleanupLoop() {
 		s.cleanup()
 	}
 }
+
+// ResetPasswordData данные для сброса пароля
+type ResetPasswordData struct {
+	Email     string
+	Code      string
+	ExpiresAt time.Time
+	Verified  bool
+}
+
+// ResetPasswordStorage интерфейс для работы с кодами сброса пароля
+type ResetPasswordStorage interface {
+	Save(data *ResetPasswordData) error
+	GetByEmail(email string) (*ResetPasswordData, error)
+	Delete(email string) error
+	MarkVerified(email string) error
+}
+
+// MemoryResetPasswordStorage хранит данные для сброса пароля в памяти
+type MemoryResetPasswordStorage struct {
+	mu    sync.RWMutex
+	codes map[string]*ResetPasswordData
+}
+
+func NewMemoryResetPasswordStorage() *MemoryResetPasswordStorage {
+	storage := &MemoryResetPasswordStorage{
+		codes: make(map[string]*ResetPasswordData),
+	}
+	go storage.cleanupLoop()
+	return storage
+}
+
+func (s *MemoryResetPasswordStorage) Save(data *ResetPasswordData) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.codes[data.Email] = data
+	return nil
+}
+
+func (s *MemoryResetPasswordStorage) GetByEmail(email string) (*ResetPasswordData, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	data, exists := s.codes[email]
+	if !exists {
+		return nil, nil
+	}
+	if time.Now().After(data.ExpiresAt) {
+		return nil, nil
+	}
+	return data, nil
+}
+
+func (s *MemoryResetPasswordStorage) Delete(email string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.codes, email)
+	return nil
+}
+
+func (s *MemoryResetPasswordStorage) MarkVerified(email string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	data, exists := s.codes[email]
+	if !exists {
+		return nil
+	}
+	data.Verified = true
+	return nil
+}
+
+func (s *MemoryResetPasswordStorage) cleanup() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	now := time.Now()
+	for email, data := range s.codes {
+		if now.After(data.ExpiresAt) {
+			delete(s.codes, email)
+		}
+	}
+}
+
+func (s *MemoryResetPasswordStorage) cleanupLoop() {
+	ticker := time.NewTicker(1 * time.Minute)
+	for range ticker.C {
+		s.cleanup()
+	}
+}

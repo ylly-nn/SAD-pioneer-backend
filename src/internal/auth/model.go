@@ -51,6 +51,23 @@ type LoginRequest struct {
 	Password string `json:"password" example:"1A_password" validate:"required"`
 }
 
+// Запрос на восстановление пароля
+type ForgotPasswordRequest struct {
+	Email string `json:"email" example:"example@gmail.com" validate:"required,email"`
+}
+
+// Запрос на подтверждение кода
+type VerifyResetCodeRequest struct {
+	Email string `json:"email" example:"example@gmail.com" validate:"required,email"`
+	Code  string `json:"code" example:"000000" validate:"required,len=6"`
+}
+
+// Запрос на установку нового пароля
+type SetNewPasswordRequest struct {
+	Email       string `json:"email" example:"example@gmail.com" validate:"required,email"`
+	NewPassword string `json:"new_password" example:"New_Password123!" validate:"required,min=8,max=24,password"`
+}
+
 // Запрос на обновление токена
 type RefreshRequest struct {
 	RefreshToken string `json:"refresh_token"  example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." validate:"required"`

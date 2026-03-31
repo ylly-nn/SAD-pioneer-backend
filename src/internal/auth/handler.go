@@ -129,6 +129,97 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(tokens)
 }
 
+// ForgotPassword обрабатывает POST /auth/forgot-password, отправляет код для восстановления пароля
+func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var req ForgotPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := middleware.ValidateStruct(req); err != nil {
+		middleware.SendValidationError(w, err)
+		return
+	}
+
+	err := h.auth.ForgotPassword(req.Email)
+	if err != nil {
+		switch err.Error() {
+		case ErrUserNotFound:
+			http.Error(w, "User not found", http.StatusNotFound)
+		default:
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Reset code sent to email",
+		"email":   req.Email,
+	})
+}
+
+// VerifyResetCode обрабатывает POST /auth/verify-reset-code, подтверждает код для восстановления пароля
+func (h *Handler) VerifyResetCode(w http.ResponseWriter, r *http.Request) {
+	var req VerifyResetCodeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := middleware.ValidateStruct(req); err != nil {
+		middleware.SendValidationError(w, err)
+		return
+	}
+
+	err := h.auth.VerifyResetCode(req.Email, req.Code)
+	if err != nil {
+		switch err.Error() {
+		case ErrInvalidCode, ErrCodeExpired:
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		default:
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Code verified successfully",
+	})
+}
+
+// SetPassword обрабатывает /auth/set-password, устанавливает новый пароль
+func (h *Handler) SetPassword(w http.ResponseWriter, r *http.Request) {
+	var req SetNewPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := middleware.ValidateStruct(req); err != nil {
+		middleware.SendValidationError(w, err)
+		return
+	}
+
+	err := h.auth.SetPassword(req.Email, req.NewPassword)
+	if err != nil {
+		switch err.Error() {
+		case "reset session not found or expired", "code not verified":
+			http.Error(w, "Invalid or expired reset session", http.StatusBadRequest)
+		default:
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Password reset successfully",
+	})
+}
+
 // Refresh обрабатывает POST /auth/refresh, работает с токенами
 func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {

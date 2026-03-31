@@ -64,8 +64,9 @@ func main() {
 	tsUserStorage := auth.NewPostgresTSUserStorage(database)
 	refreshTokenStorage := auth.NewPostgresRefreshTokenStorage(database)
 	verificationStorage := auth.NewMemoryVerificationStorage()
+	resetPasswordStorage := auth.NewMemoryResetPasswordStorage()
 
-	authService := auth.NewAuthManager(userStorage, refreshTokenStorage, verificationStorage, tsUserStorage, emailService, authConfig)
+	authService := auth.NewAuthManager(userStorage, refreshTokenStorage, verificationStorage, resetPasswordStorage, tsUserStorage, emailService, authConfig)
 	authHandler := auth.NewHandler(authService)
 
 	//Запуск обработчиков из пакета servise

@@ -21,12 +21,13 @@ type Config struct {
 
 // Содержит бизнес-логику для работы с авторизацией
 type AuthManager struct {
-	userStorage         UserStorage
-	refreshTokenStorage RefreshTokenStorage
-	verificationStorage VerificationStorage
-	tsUserStorage       TSUserStorage
-	emailSender         configPkg.EmailSender
-	config              Config
+	userStorage          UserStorage
+	refreshTokenStorage  RefreshTokenStorage
+	verificationStorage  VerificationStorage
+	resetPasswordStorage ResetPasswordStorage
+	tsUserStorage        TSUserStorage
+	emailSender          configPkg.EmailSender
+	config               Config
 }
 
 // Создает новый экземпляр сервиса
@@ -34,17 +35,19 @@ func NewAuthManager(
 	userStorage UserStorage,
 	refreshTokenStorage RefreshTokenStorage,
 	verificationStorage VerificationStorage,
+	resetPasswordStorage ResetPasswordStorage,
 	tsUserStorage TSUserStorage,
 	emailSender configPkg.EmailSender,
 	config Config,
 ) *AuthManager {
 	return &AuthManager{
-		userStorage:         userStorage,
-		refreshTokenStorage: refreshTokenStorage,
-		verificationStorage: verificationStorage,
-		tsUserStorage:       tsUserStorage,
-		emailSender:         emailSender,
-		config:              config,
+		userStorage:          userStorage,
+		refreshTokenStorage:  refreshTokenStorage,
+		verificationStorage:  verificationStorage,
+		resetPasswordStorage: resetPasswordStorage,
+		tsUserStorage:        tsUserStorage,
+		emailSender:          emailSender,
+		config:               config,
 	}
 }
 
@@ -196,6 +199,101 @@ func (s *AuthManager) RefreshTokens(refreshToken string) (*TokenResponse, error)
 // Выход из системы
 func (s *AuthManager) Logout(refreshToken string) error {
 	return s.refreshTokenStorage.Delete(refreshToken)
+}
+
+// ForgotPassword - отправка кода для восстановления пароля
+func (s *AuthManager) ForgotPassword(email string) error {
+	// Проверка существования пользователя
+	user, err := s.userStorage.GetByEmail(email)
+	if err != nil {
+		return fmt.Errorf("failed to check user existence: %w", err)
+	}
+	if user == nil {
+		return fmt.Errorf(ErrUserNotFound)
+	}
+
+	// Генерация кода
+	code := s.generateVerificationCode()
+
+	// Сохранение данных для восстановления пароля
+	data := &ResetPasswordData{
+		Email:     email,
+		Code:      code,
+		ExpiresAt: time.Now().Add(s.config.VerificationTTL),
+		Verified:  false,
+	}
+
+	if err := s.resetPasswordStorage.Save(data); err != nil {
+		return fmt.Errorf("failed to save reset code: %w", err)
+	}
+
+	// Отправка кода на email
+	if err := s.emailSender.SendVerificationResetCode(email, code); err != nil {
+		s.resetPasswordStorage.Delete(email)
+		return fmt.Errorf("failed to send reset code: %w", err)
+	}
+
+	return nil
+}
+
+// VerifyResetCode: подтверждение кода
+func (s *AuthManager) VerifyResetCode(email, code string) error {
+	// Получение данных из хранилища
+	data, err := s.resetPasswordStorage.GetByEmail(email)
+	if err != nil {
+		return fmt.Errorf("failed to get reset data: %w", err)
+	}
+	if data == nil {
+		return fmt.Errorf(ErrInvalidCode)
+	}
+
+	// Проверка срока действия кода
+	if time.Now().After(data.ExpiresAt) {
+		s.resetPasswordStorage.Delete(email)
+		return fmt.Errorf(ErrCodeExpired)
+	}
+
+	// Проверка кода
+	if data.Code != code {
+		return fmt.Errorf(ErrInvalidCode)
+	}
+
+	if err := s.resetPasswordStorage.MarkVerified(email); err != nil {
+		return fmt.Errorf("failed to mark code as verified: %w", err)
+	}
+
+	return nil
+}
+
+// SetNewPassword: установка нового пароля
+func (s *AuthManager) SetPassword(email, newPassword string) error {
+	// Проверка, что код был подтверждён
+	data, err := s.resetPasswordStorage.GetByEmail(email)
+	if err != nil {
+		return fmt.Errorf("failed to get reset data: %w", err)
+	}
+	if data == nil {
+		return fmt.Errorf("reset session not found or expired")
+	}
+	if !data.Verified {
+		return fmt.Errorf("code not verified")
+	}
+
+	// Хеширование нового пароля
+	hashedPassword, err := HashPassword(newPassword)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	// Обновление пароля в БД
+	if err := s.userStorage.UpdatePassword(email, hashedPassword); err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	// Удаление временных данных
+	s.resetPasswordStorage.Delete(email)
+
+	return nil
 }
 
 // Создание пары токенов

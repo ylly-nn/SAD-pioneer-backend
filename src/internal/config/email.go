@@ -47,9 +47,10 @@ func ConnectSMTP() (*SMTPEmailService, error) {
 // Интерфейс для отправки email
 type EmailSender interface {
 	SendVerificationCode(toEmail, code string) error
+	SendVerificationResetCode(toEmail, code string) error
 }
 
-// Отправляние кода подтверждения
+// Отправление кода подтверждения для регистрации
 func (s *SMTPEmailService) SendVerificationCode(toEmail, code string) error {
 	subject := "Код подтверждения регистрации"
 
@@ -70,6 +71,75 @@ func (s *SMTPEmailService) SendVerificationCode(toEmail, code string) error {
 					<div class="code">%s</div>
 					<p>Код действителен в течение 10 минут.</p>
 					<p>Если вы не регистрировались, просто проигнорируйте это письмо.</p>
+				</div>
+				<div class="footer">
+					<p>© %d Pioneer</p>
+				</div>
+			</div>
+		</body>
+		</html>
+	`, code, time.Now().Year())
+
+	// Заголовки
+	headers := make(map[string]string)
+	headers["From"] = s.from
+	headers["To"] = toEmail
+	headers["Subject"] = subject
+	headers["MIME-Version"] = "1.0"
+	headers["Content-Type"] = "text/html; charset=UTF-8"
+
+	// Сборка сообщения
+	message := ""
+	for k, v := range headers {
+		message += fmt.Sprintf("%s: %s\r\n", k, v)
+	}
+	message += "\r\n" + body
+
+	// Аутентификация
+	auth := smtp.PlainAuth("", s.username, s.password, s.host)
+
+	// Адрес сервера
+	addr := fmt.Sprintf("%s:%s", s.host, s.port)
+
+	// Отправление с таймаутом
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- smtp.SendMail(addr, auth, s.from, []string{toEmail}, []byte(message))
+	}()
+
+	// Ожидание ответа (15 секунд)
+	select {
+	case err := <-errChan:
+		if err != nil {
+			return fmt.Errorf("ошибка отправки email: %w", err)
+		}
+		return nil
+	case <-time.After(15 * time.Second):
+		return fmt.Errorf("таймаут отправки email")
+	}
+}
+
+// Отправление кода подтверждения для восстановления пароля
+func (s *SMTPEmailService) SendVerificationResetCode(toEmail, code string) error {
+	subject := "Код подтверждения для восстановления пароля"
+
+	// Тело письма
+	body := fmt.Sprintf(`
+		<!DOCTYPE html>
+		<html>
+		<head>
+			<meta charset="UTF-8">
+		</head>
+		<body>
+			<div class="container">
+				<div class="header">
+					<h2>Восстановление пароля</h2>
+				</div>
+				<div class="content">
+					<p>Для восстановления пароля введите следующий код подтверждения:</p>
+					<div class="code">%s</div>
+					<p>Код действителен в течение 10 минут.</p>
+					<p>Если запрашивали код не вы, просто проигнорируйте это письмо.</p>
 				</div>
 				<div class="footer">
 					<p>© %d Pioneer</p>
