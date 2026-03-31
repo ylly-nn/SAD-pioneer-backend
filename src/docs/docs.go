@@ -2450,7 +2450,10 @@ const docTemplate = `{
                     "example": "ООО \"Ромашка\""
                 },
                 "order_details": {
-                    "type": "object"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/order.ServDetails"
+                    }
                 },
                 "order_id": {
                     "type": "string",
@@ -2472,6 +2475,10 @@ const docTemplate = `{
                         }
                     ],
                     "example": "create"
+                },
+                "sum": {
+                    "type": "number",
+                    "example": 560.12
                 }
             }
         },
@@ -2479,7 +2486,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "order_details": {
-                    "type": "object"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/order.DetailOnly"
+                    }
                 },
                 "service_by_branch": {
                     "type": "string",
@@ -2490,6 +2500,15 @@ const docTemplate = `{
                     "type": "string",
                     "format": "yyyy-mm-ddThh-mm-ss+hh:mm",
                     "example": "2026-03-16T11:20:00+04:00"
+                }
+            }
+        },
+        "order.DetailOnly": {
+            "type": "object",
+            "properties": {
+                "detail": {
+                    "type": "string",
+                    "example": "Мойка колёс"
                 }
             }
         },
@@ -2528,6 +2547,9 @@ const docTemplate = `{
                 "order_details": {
                     "type": "object"
                 },
+                "price": {
+                    "type": "object"
+                },
                 "service_by_branch": {
                     "type": "string",
                     "example": "917e77fa-1672-4dfb-8507-d5755b31ebb3"
@@ -2543,6 +2565,9 @@ const docTemplate = `{
                         }
                     ],
                     "example": "create"
+                },
+                "sum": {
+                    "type": "number"
                 },
                 "users": {
                     "type": "string",
@@ -2572,6 +2597,23 @@ const docTemplate = `{
                 "OrderStatusApprove",
                 "OrderStatusReject"
             ]
+        },
+        "order.ServDetails": {
+            "type": "object",
+            "properties": {
+                "detail": {
+                    "type": "string",
+                    "example": "Мойка салона"
+                },
+                "duration_min": {
+                    "type": "integer",
+                    "example": 40
+                },
+                "price": {
+                    "type": "number",
+                    "example": 560.12
+                }
+            }
         },
         "partners.PartnerRequest": {
             "type": "object",

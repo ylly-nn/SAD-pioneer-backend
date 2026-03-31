@@ -395,7 +395,9 @@ definitions:
         example: ООО "Ромашка"
         type: string
       order_details:
-        type: object
+        items:
+          $ref: '#/definitions/order.ServDetails'
+        type: array
       order_id:
         example: 83817fd0-ffd0-478b-b1ae-b082e8581830
         type: string
@@ -410,11 +412,16 @@ definitions:
         allOf:
         - $ref: '#/definitions/order.OrderStatus'
         example: create
+      sum:
+        example: 560.12
+        type: number
     type: object
   order.CreateOrderRequest:
     properties:
       order_details:
-        type: object
+        items:
+          $ref: '#/definitions/order.DetailOnly'
+        type: array
       service_by_branch:
         example: 89d74b8a-8cee-44fa-96ea-6aec1e8ad66b
         format: uuid
@@ -422,6 +429,12 @@ definitions:
       start_moment:
         example: "2026-03-16T11:20:00+04:00"
         format: yyyy-mm-ddThh-mm-ss+hh:mm
+        type: string
+    type: object
+  order.DetailOnly:
+    properties:
+      detail:
+        example: Мойка колёс
         type: string
     type: object
   order.GetFreeTimeResponse:
@@ -449,6 +462,8 @@ definitions:
         type: string
       order_details:
         type: object
+      price:
+        type: object
       service_by_branch:
         example: 917e77fa-1672-4dfb-8507-d5755b31ebb3
         type: string
@@ -459,6 +474,8 @@ definitions:
         allOf:
         - $ref: '#/definitions/order.OrderStatus'
         example: create
+      sum:
+        type: number
       users:
         example: ex@mail.ru
         type: string
@@ -481,6 +498,18 @@ definitions:
     - OrderStatusCreate
     - OrderStatusApprove
     - OrderStatusReject
+  order.ServDetails:
+    properties:
+      detail:
+        example: Мойка салона
+        type: string
+      duration_min:
+        example: 40
+        type: integer
+      price:
+        example: 560.12
+        type: number
+    type: object
   partners.PartnerRequest:
     properties:
       created_at:

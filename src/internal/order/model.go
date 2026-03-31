@@ -33,6 +33,8 @@ type Order struct {
 	EndMoment       *time.Time      `json:"end_moment,omitempty" example:"2026-04-16T05:20:00Z"`
 	Status          OrderStatus     `json:"status" example:"create"`
 	OrderDetails    json.RawMessage `json:"order_details" swaggertype:"object"`
+	Price           json.RawMessage `json:"price" swaggertype:"object"`
+	Sum             float32         `json:"sum"`
 }
 
 // BusyTime представляет временной интервал занятости (начало и конец)
@@ -63,38 +65,41 @@ type OpenCloseBranch struct {
 
 // CreateOrderRequest используется для POST /orders.
 type CreateOrderRequest struct {
-	ServiceByBranch uuid.UUID       `json:"service_by_branch" example:"89d74b8a-8cee-44fa-96ea-6aec1e8ad66b" format:"uuid"`
-	StartMoment     time.Time       `json:"start_moment" example:"2026-03-16T11:20:00+04:00" format:"yyyy-mm-ddThh-mm-ss+hh:mm"`
-	OrderDetails    json.RawMessage `json:"order_details,omitempty" swaggertype:"object"`
+	ServiceByBranch uuid.UUID    `json:"service_by_branch" example:"89d74b8a-8cee-44fa-96ea-6aec1e8ad66b" format:"uuid"`
+	StartMoment     time.Time    `json:"start_moment" example:"2026-03-16T11:20:00+04:00" format:"yyyy-mm-ddThh-mm-ss+hh:mm"`
+	OrderDetails    []DetailOnly `json:"order_details,omitempty"`
 }
 
 // Структура заказа со всеми необходимыми данными
 type FullOrder struct {
-	ID              uuid.UUID       `json:"id"`
-	Email           string          `json:"users"`
-	ServiceByBranch uuid.UUID       `json:"service_by_branch"`
-	InnCompany      string          `json:"inn"`
-	NameCompany     string          `json:"name_company"`
-	City            string          `json:"city"`
-	Address         string          `json:"address"`
-	Service         string          `json:"service"`
-	StartMoment     time.Time       `json:"start_moment"`
-	EndMoment       *time.Time      `json:"end_moment,omitempty"`
-	Status          OrderStatus     `json:"status" example:"create"`
-	OrderDetails    json.RawMessage `json:"order_details,omitempty"`
+	ID              uuid.UUID         `json:"id"`
+	Email           string            `json:"users"`
+	ServiceByBranch uuid.UUID         `json:"service_by_branch"`
+	InnCompany      string            `json:"inn"`
+	NameCompany     string            `json:"name_company"`
+	City            string            `json:"city"`
+	Address         string            `json:"address"`
+	Service         string            `json:"service"`
+	StartMoment     time.Time         `json:"start_moment"`
+	EndMoment       *time.Time        `json:"end_moment,omitempty"`
+	Status          OrderStatus       `json:"status" example:"create"`
+	OrderDetails    []ServiceDuration `json:"order_details,omitempty"`
+	Price           []ServPrice       `json:"price"`
+	Sum             float32           `json:"sum"`
 }
 
 // ClientOrder - упрощённая информация о заказе для клиента
 type ClientOrder struct {
-	ID           uuid.UUID       `json:"order_id" example:"83817fd0-ffd0-478b-b1ae-b082e8581830"`
-	NameCompany  string          `json:"name_company" example:"ООО \"Ромашка\""`
-	City         string          `json:"city" example:"Москва"`
-	Address      string          `json:"address" example:"ул. Тверская, д. 1"`
-	Service      string          `json:"service" example:"Шиномонтаж"`
-	StartMoment  UTCTime         `json:"start_moment" example:"2026-03-16T09:30:00+00:00" format:"yyyy-mm-ddThh:mm:ss+(Z)hh:mm"`
-	EndMoment    *UTCTime        `json:"end_moment" example:"2026-03-16T11:05:00+00:00" format:"yyyy-mm-ddThh:mm:ss+(Z)hh:mm"`
-	Status       OrderStatus     `json:"status" example:"create"`
-	OrderDetails json.RawMessage `json:"order_details" swaggertype:"object"`
+	ID           uuid.UUID     `json:"order_id" example:"83817fd0-ffd0-478b-b1ae-b082e8581830"`
+	NameCompany  string        `json:"name_company" example:"ООО \"Ромашка\""`
+	City         string        `json:"city" example:"Москва"`
+	Address      string        `json:"address" example:"ул. Тверская, д. 1"`
+	Service      string        `json:"service" example:"Шиномонтаж"`
+	StartMoment  UTCTime       `json:"start_moment" example:"2026-03-16T09:30:00+00:00" format:"yyyy-mm-ddThh:mm:ss+(Z)hh:mm"`
+	EndMoment    *UTCTime      `json:"end_moment" example:"2026-03-16T11:05:00+00:00" format:"yyyy-mm-ddThh:mm:ss+(Z)hh:mm"`
+	Status       OrderStatus   `json:"status" example:"create"`
+	OrderDetails []ServDetails `json:"order_details" swaggertype:"array"`
+	Sum          float32       `json:"sum"`
 }
 
 // Используется для отдачи пользователю в обработчике Get /branch/freetime
@@ -103,28 +108,38 @@ type GetFreeTimeResponse struct {
 	Intervals []string `json:"intervals"  example:"[2026-03-17T10:35:00+04:00, 2026-03-17T10:50:00+04:00, 2026-03-17T11:05:00+04:00]"`
 }
 
+// Используется для получени заказов с временем в определённом часовом поясе
 type ClientOrderResponseTZ struct {
-	ID           uuid.UUID       `json:"order_id" example:"83817fd0-ffd0-478b-b1ae-b082e8581830"`
-	NameCompany  string          `json:"name_company" example:"ООО \"Ромашка\""`
-	City         string          `json:"city" example:"Москва"`
-	Address      string          `json:"address" example:"ул. Тверская, д. 1"`
-	Service      string          `json:"service" example:"Шиномонтаж"`
-	StartMoment  time.Time       `json:"start_moment" example:"2026-03-16T09:30:00+00:00" format:"yyyy-mm-ddThh:mm:ss+(Z)hh:mm"`
-	EndMoment    *time.Time      `json:"end_moment" example:"2026-03-16T11:05:00+00:00" format:"yyyy-mm-ddThh:mm:ss+(Z)hh:mm"`
-	Status       OrderStatus     `json:"status" example:"create"`
-	OrderDetails json.RawMessage `json:"order_details" swaggertype:"object"`
+	ID           uuid.UUID     `json:"order_id" example:"83817fd0-ffd0-478b-b1ae-b082e8581830"`
+	NameCompany  string        `json:"name_company" example:"ООО \"Ромашка\""`
+	City         string        `json:"city" example:"Москва"`
+	Address      string        `json:"address" example:"ул. Тверская, д. 1"`
+	Service      string        `json:"service" example:"Шиномонтаж"`
+	StartMoment  time.Time     `json:"start_moment" example:"2026-03-16T09:30:00+00:00" format:"yyyy-mm-ddThh:mm:ss+(Z)hh:mm"`
+	EndMoment    *time.Time    `json:"end_moment" example:"2026-03-16T11:05:00+00:00" format:"yyyy-mm-ddThh:mm:ss+(Z)hh:mm"`
+	Status       OrderStatus   `json:"status" example:"create"`
+	OrderDetails []ServDetails `json:"order_details" `
+	Sum          float32       `json:"sum" example:"560.12"`
 }
 
+// Название детали услуги
+type DetailOnly struct {
+	Detail string `json:"detail" example:"Мойка колёс"`
+}
+
+// Назваание и длительность
 type ServiceDuration struct {
 	Detail   string `json:"detail" example:"Мойка колёс"`
 	Duration int    `json:"duration_min" example:"35"`
 }
 
+// Название и стоимость
 type ServPrice struct {
 	Detail string  `json:"detail" example:"Мойка салона"`
 	Price  float32 `json:"price" example:"560.12"`
 }
 
+// Общие детали услуги для вывода полователю
 type ServDetails struct {
 	Detail   string  `json:"detail" example:"Мойка салона"`
 	Duration int     `json:"duration_min" example:"40"`

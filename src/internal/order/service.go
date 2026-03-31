@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"sort"
 	"time"
 
@@ -11,8 +12,11 @@ import (
 )
 
 var (
-	ErrEmptyEmail = errors.New("email cannot be empty")
-	ErrInnLen     = errors.New("inn length must be 12 characters")
+	ErrEmptyEmail         = errors.New("email cannot be empty")
+	ErrInnLen             = errors.New("inn length must be 12 characters")
+	ErrDetailNameIsEpmpty = errors.New("detail name cannot be empty")
+	ErrDetailNotFound     = errors.New("detail with this name not found")
+	ErrDetailNotAvailable = errors.New("detail  is not available for this service")
 )
 
 // содержит бизнес-логику для работы с услугами.
@@ -44,18 +48,74 @@ func (m *OrderManager) Create(email string, req CreateOrderRequest) (*Order, err
 		return nil, errors.New("order_details is required")
 	}
 
-	// Валидация order_details: должен быть объектом { "услуга": минуты }
-	var details map[string]int
-	if err := json.Unmarshal(req.OrderDetails, &details); err != nil {
-		return nil, errors.New("order_details must be a JSON object with string keys and numeric values (minutes)")
+	detailsDB, priceDB, err := m.storage.GetDetailsByBranchServ(req.ServiceByBranch)
+	if err != nil {
+		return nil, err
 	}
-	if len(details) == 0 {
-		return nil, errors.New("order_details cannot be empty")
+	if len(detailsDB) == 0 || len(priceDB) == 0 {
+		return nil, ErrDetailNotFound
+	}
+
+	priceMap := make(map[string]float32)
+	for _, p := range priceDB {
+		priceMap[p.Detail] = p.Price
+	}
+	var servDetails []ServDetails
+
+	for _, d := range detailsDB {
+		price, exists := priceMap[d.Detail]
+		if !exists {
+			// Если цены нет, деталь не включается в заказ
+			continue
+		}
+		servDetails = append(servDetails, ServDetails{
+			Detail:   d.Detail,
+			Duration: d.Duration,
+			Price:    price,
+		})
+
+	}
+
+	if len(servDetails) == 0 {
+		return nil, ErrDetailNotFound
+	}
+
+	servDetailsJSON, _ := json.Marshal(servDetails)
+	log.Printf("ServDetails: %s", servDetailsJSON)
+
+	detailMap := make(map[string]ServDetails)
+	for _, sd := range servDetails {
+		detailMap[sd.Detail] = sd
+	}
+
+	// Формируем map деталей запроса с длительностями из БД
+	detailsReq := make(map[string]int)
+	priceReq := make(map[string]float32)
+	var totalPrice float32 = 0
+
+	for _, d := range req.OrderDetails {
+		if d.Detail == "" {
+			return nil, ErrDetailNameIsEpmpty
+		}
+		sd, ok := detailMap[d.Detail]
+		if !ok {
+			return nil, ErrDetailNotAvailable
+		}
+		// Берем длительность из базы
+		detailsReq[d.Detail] = sd.Duration
+
+		// Берем цену из ранее созданного priceMap
+		price, exists := priceMap[d.Detail]
+		if !exists {
+			return nil, fmt.Errorf("price for detail '%s' not found", d.Detail)
+		}
+		priceReq[d.Detail] = price
+		totalPrice += price
 	}
 
 	// Подсчёт общей длительности
 	totalMinutes := 0
-	for name, minutes := range details {
+	for name, minutes := range detailsReq {
 		if minutes <= 0 {
 			return nil, fmt.Errorf("duration for '%s' must be positive (minutes)", name)
 		}
@@ -88,14 +148,31 @@ func (m *OrderManager) Create(email string, req CreateOrderRequest) (*Order, err
 
 	endTime := req.StartMoment.Add(time.Duration(totalMinutes) * time.Minute)
 
+	orderDetailsJSON, err := json.Marshal(detailsReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal order details: %w", err)
+	}
+
+	orderPriceJSON, err := json.Marshal(priceReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal order prices: %w", err)
+	}
+
 	order := Order{
 		Users:           email,
 		ServiceByBranch: req.ServiceByBranch,
 		StartMoment:     req.StartMoment,
 		EndMoment:       &endTime,
-		OrderDetails:    req.OrderDetails,
+		OrderDetails:    orderDetailsJSON,
+		Price:           orderPriceJSON,
+		Sum:             totalPrice,
 	}
-	return m.storage.Create(order)
+	orderRes, err := m.storage.Create(order)
+	if err != nil {
+		return nil, err
+	}
+
+	return orderRes, err
 }
 
 // GetFreeTimeForWeek возвращает свободные слоты с шагом 15 минут
@@ -243,11 +320,6 @@ func generateSlots(start, end time.Time, duration int) []time.Time {
 	return slots
 }
 
-// возвращает список всех заказов
-func (m *OrderManager) GetFullAllOrders() ([]*FullOrder, error) {
-	return m.storage.GetFullAllOrders()
-}
-
 // возвращает список заказов опредеоённого киента
 func (m *OrderManager) GetByClient(email string) ([]*ClientOrder, error) {
 	if email == "" {
@@ -255,18 +327,42 @@ func (m *OrderManager) GetByClient(email string) ([]*ClientOrder, error) {
 	}
 
 	fullOrders, err := m.storage.GetByClient(email)
+
 	if err != nil {
 		return nil, err
 	}
-	var responses []*ClientOrder
-	for _, fo := range fullOrders {
 
+	var responses []*ClientOrder
+
+	for _, fo := range fullOrders {
+		priceMap := make(map[string]float32)
+		for _, p := range fo.Price {
+			priceMap[p.Detail] = p.Price
+		}
+
+		// Формируем ServDetails, объединяя длительность из OrderDetails и цену из Price
+		servDetails := make([]ServDetails, 0, len(fo.OrderDetails))
+		for _, d := range fo.OrderDetails {
+			price, exists := priceMap[d.Detail]
+			if !exists {
+				// Если цены нет, деталь пропускаем (логически такого быть не должно)
+				continue
+			}
+			servDetails = append(servDetails, ServDetails{
+				Detail:   d.Detail,
+				Duration: d.Duration,
+				Price:    price,
+			})
+		}
+
+		// Преобразование времени
 		start := UTCTime(fo.StartMoment)
 		var end *UTCTime
 		if fo.EndMoment != nil {
 			utcEnd := UTCTime(*fo.EndMoment)
 			end = &utcEnd
 		}
+
 		responses = append(responses, &ClientOrder{
 			ID:           fo.ID,
 			NameCompany:  fo.NameCompany,
@@ -276,15 +372,22 @@ func (m *OrderManager) GetByClient(email string) ([]*ClientOrder, error) {
 			StartMoment:  start,
 			EndMoment:    end,
 			Status:       fo.Status,
-			OrderDetails: fo.OrderDetails,
+			OrderDetails: servDetails,
+			Sum:          fo.Sum,
 		})
 	}
+
 	return responses, nil
 }
 
-func (m *OrderManager) GetByCompany(inn string) ([]*FullOrder, error) {
-	if len(inn) != 12 {
-		return nil, ErrInnLen
-	}
-	return m.storage.GetByCompany(inn)
-}
+// func (m *OrderManager) GetByCompany(inn string) ([]*FullOrder, error) {
+// 	if len(inn) != 12 {
+// 		return nil, ErrInnLen
+// 	}
+// 	return m.storage.GetByCompany(inn)
+// }
+
+// // возвращает список всех заказов
+// func (m *OrderManager) GetFullAllOrders() ([]*FullOrder, error) {
+// 	return m.storage.GetFullAllOrders()
+// }

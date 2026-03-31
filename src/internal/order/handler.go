@@ -2,6 +2,7 @@ package order
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"src/internal/timeparsing"
@@ -117,14 +118,11 @@ func (h *Handler) GetFreeTime(w http.ResponseWriter, r *http.Request) {
 // Email извлекается из JWT токена, который добавляется в контекст middleware'ой AuthMiddleware.Authenticate
 func (h *Handler) GetClientOrders(w http.ResponseWriter, r *http.Request) {
 
-	// Извлеxtybt  данных пользователя из контекста (добавлены в middleware)
 	claims, ok := r.Context().Value("user").(jwt.MapClaims)
 	if !ok {
 		http.Error(w, "unauthorized: missing user claims", http.StatusUnauthorized)
 		return
 	}
-
-	// Получение email из claims (из тела токена)
 	email, ok := claims["email"].(string)
 	if !ok || email == "" {
 		http.Error(w, "unauthorized: email not found in token", http.StatusUnauthorized)
@@ -133,6 +131,12 @@ func (h *Handler) GetClientOrders(w http.ResponseWriter, r *http.Request) {
 
 	orders, err := h.order.GetByClient(email)
 	if err != nil {
+		if errors.Is(err, ErrOrdersNotFound) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(nil)
+			return
+		}
 		log.Printf("GetClientOrders error: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -170,6 +174,7 @@ func (h *Handler) GetClientOrders(w http.ResponseWriter, r *http.Request) {
 			StartMoment:  start,
 			Status:       o.Status,
 			OrderDetails: o.OrderDetails,
+			Sum:          o.Sum,
 		}
 		if o.EndMoment != nil {
 			end := time.Time(*o.EndMoment).In(loc)
