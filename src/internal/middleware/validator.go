@@ -21,6 +21,7 @@ func init() {
 	validate.RegisterValidation("org_short_name", validateOrgShortName)
 	validate.RegisterValidation("person_name", validatePersonName)
 	validate.RegisterValidation("phone", validatePhone)
+	validate.RegisterValidation("address", validateAddress)
 }
 
 func validateEmail(fl validator.FieldLevel) bool {
@@ -80,6 +81,8 @@ func SendValidationError(w http.ResponseWriter, err error) {
 			fields[strings.ToLower(field)] = "Поле должно содержать только буквы русского алфавита и тире (от 2 до 100 символов)"
 		case "Phone":
 			fields["phone"] = "Телефон должен содержать 10 цифр"
+		case "Address":
+			fields["address"] = "Адрес должен содержать от 10 до 50 символов (кириллица, цифры, пробел, точка, запятая)"
 		default:
 			fields[field] = "Некорректное значение"
 		}
@@ -421,6 +424,33 @@ func validatePhone(fl validator.FieldLevel) bool {
 		if ch < '0' || ch > '9' {
 			return false
 		}
+	}
+	return true
+}
+
+// validateAddress проверяет адрес (кириллица, цифры, пробел, точка, запятая)
+func validateAddress(fl validator.FieldLevel) bool {
+	address := fl.Field().String()
+
+	// Проверка длины
+	if len(address) < 10 || len(address) > 50 {
+		return false
+	}
+
+	for _, ch := range address {
+		// Кириллица
+		if (ch >= 'а' && ch <= 'я') || (ch >= 'А' && ch <= 'Я') || ch == 'ё' || ch == 'Ё' {
+			continue
+		}
+		// Цифры
+		if ch >= '0' && ch <= '9' {
+			continue
+		}
+		// Пробел, точка, запятая
+		if ch == ' ' || ch == '.' || ch == ',' {
+			continue
+		}
+		return false
 	}
 	return true
 }

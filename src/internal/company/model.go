@@ -94,7 +94,7 @@ type AddUserRequest struct {
 // AddBranchRequest - запрос на добавление нового филиала
 type AddBranchRequest struct {
 	City      string               `json:"city" example:"Москва" validate:"required"`
-	Address   string               `json:"address" example:"Улица тверская дом 1" validate:"required"`
+	Address   string               `json:"address" example:"Улица тверская дом 1" validate:"required,address"`
 	OpenTime  timeparsing.TimeOnly `json:"open_time" example:"09:00:00+03:00" validate:"required"`
 	CloseTime timeparsing.TimeOnly `json:"close_time" example:"17:00:00+03:00" validate:"required"`
 }
