@@ -109,3 +109,62 @@ func postAuthRefresh() {
 	var _ = auth.RefreshRequest{}
 	var _ = auth.TokenResponse{}
 }
+
+type resForgotPassword struct {
+	Message string `json:"message" example:"Reset code sent to email"`
+	Email   string `json:"email" example:"user@example.com"`
+}
+
+// ForgotPassword отправляет код для восстановления пароля
+// @Summary      Запрос на восстановление пароля
+// @Description  Отправляет на указанный email код для восстановления пароля.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request body auth.ForgotPasswordRequest true "Email пользователя"
+// @Success      202 {object} resForgotPassword "Код отправлен"
+// @Failure      400 {string} string "Invalid request body | validation error"
+// @Failure      404 {string} string "User not found"
+// @Failure      500 {string} string "Internal server error"
+// @Router       /auth/forgot-password [post]
+func ForgotPassword() {
+	var _ = auth.ForgotPasswordRequest{}
+}
+
+type resVerifyResetCode struct {
+	Message string `json:"message" example:"Code verified successfully"`
+}
+
+// VerifyResetCode подтверждает код для восстановления пароля
+// @Summary      Подтверждение кода
+// @Description  Проверяет корректность и срок действия кода, отправленного на email.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request body auth.VerifyResetCodeRequest true "Email и код подтверждения"
+// @Success      200 {object} resVerifyResetCode "Код подтверждён"
+// @Failure      400 {string} string "Invalid request body | validation error | invalid code | code expired"
+// @Failure      500 {string} string "Internal server error"
+// @Router       /auth/verify-reset-code [post]
+func VerifyResetCode() {
+	var _ = auth.VerifyResetCodeRequest{}
+}
+
+type resSetPassword struct {
+	Message string `json:"message" example:"Password reset successfully"`
+}
+
+// SetPassword устанавливает новый пароль после подтверждения кода
+// @Summary      Установка нового пароля
+// @Description  Устанавливает новый пароль для пользователя после успешного подтверждения кода.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request body auth.SetNewPasswordRequest true "Email и новый пароль"
+// @Success      200 {object} resSetPassword "Пароль изменён"
+// @Failure      400 {string} string "Invalid request body | validation error | Invalid or expired reset session"
+// @Failure      500 {string} string "Internal server error"
+// @Router       /auth/set-password [post]
+func SetPassword() {
+	var _ = auth.SetNewPasswordRequest{}
+}

@@ -15,6 +15,69 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/create-admin": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Создает нового администратора. Доступно только для существующих администраторов.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Создать нового администратора",
+                "parameters": [
+                    {
+                        "description": "Данные для создания администратора",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/swagger.CreateAdminRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Администратор успешно создан",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.CreateAdminResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body | validation error | email already exists",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized | Invalid token",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: only admins can create new admins",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/partner-requests/": {
             "get": {
                 "security": [
@@ -458,6 +521,126 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/partner-requests/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает заявку на регистрацию организации по указанному UUID. Доступно только для администраторов.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Получить заявку по ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "UUID заявки",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Информация о заявке",
+                        "schema": {
+                            "$ref": "#/definitions/admin.PartnerRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "ID is required | ID must be UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: admin access required",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "request with id ... not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/forgot-password": {
+            "post": {
+                "description": "Отправляет на указанный email код для восстановления пароля.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Запрос на восстановление пароля",
+                "parameters": [
+                    {
+                        "description": "Email пользователя",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.ForgotPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Код отправлен",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.resForgotPassword"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body | validation error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Аутентифицирует пользователя по email и паролю, возвращает access и refresh токены",
@@ -678,6 +861,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/set-password": {
+            "post": {
+                "description": "Устанавливает новый пароль для пользователя после успешного подтверждения кода.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Установка нового пароля",
+                "parameters": [
+                    {
+                        "description": "Email и новый пароль",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.SetNewPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Пароль изменён",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.resSetPassword"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body | validation error | Invalid or expired reset session",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/verify": {
             "post": {
                 "description": "Проверяет код подтверждения, отправленный на email, и завершает регистрацию пользователя",
@@ -717,6 +946,52 @@ const docTemplate = `{
                     },
                     "405": {
                         "description": "Method not allowed",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/verify-reset-code": {
+            "post": {
+                "description": "Проверяет корректность и срок действия кода, отправленного на email.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Подтверждение кода",
+                "parameters": [
+                    {
+                        "description": "Email и код подтверждения",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.VerifyResetCodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Код подтверждён",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.resVerifyResetCode"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body | validation error | invalid code | code expired",
                         "schema": {
                             "type": "string"
                         }
@@ -1979,6 +2254,18 @@ const docTemplate = `{
                 }
             }
         },
+        "auth.ForgotPasswordRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "example@gmail.com"
+                }
+            }
+        },
         "auth.LoginRequest": {
             "type": "object",
             "required": [
@@ -2029,6 +2316,25 @@ const docTemplate = `{
                 }
             }
         },
+        "auth.SetNewPasswordRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "new_password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "example@gmail.com"
+                },
+                "new_password": {
+                    "type": "string",
+                    "maxLength": 24,
+                    "minLength": 8,
+                    "example": "New_Password123!"
+                }
+            }
+        },
         "auth.TokenResponse": {
             "type": "object",
             "properties": {
@@ -2051,6 +2357,23 @@ const docTemplate = `{
             }
         },
         "auth.VerifyCodeRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "email"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "000000"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "example@gmail.com"
+                }
+            }
+        },
+        "auth.VerifyResetCodeRequest": {
             "type": "object",
             "required": [
                 "code",
@@ -2608,6 +2931,18 @@ const docTemplate = `{
         },
         "partners.PartnerRequest": {
             "type": "object",
+            "required": [
+                "email",
+                "inn",
+                "kpp",
+                "name",
+                "ogrn",
+                "org_name",
+                "org_short_name",
+                "patronymic",
+                "phone",
+                "surname"
+            ],
             "properties": {
                 "created_at": {
                     "type": "string",
@@ -2710,6 +3045,41 @@ const docTemplate = `{
                 }
             }
         },
+        "swagger.CreateAdminRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "name",
+                "surname"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "example@gmail.com"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Иван"
+                },
+                "surname": {
+                    "type": "string",
+                    "example": "Иванов"
+                }
+            }
+        },
+        "swagger.CreateAdminResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "example@gmail.com"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Admin created successfully"
+                }
+            }
+        },
         "swagger.LogoutRequest": {
             "type": "object",
             "properties": {
@@ -2760,6 +3130,37 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "example": "User successfully registered"
+                }
+            }
+        },
+        "swagger.resForgotPassword": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Reset code sent to email"
+                }
+            }
+        },
+        "swagger.resSetPassword": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Password reset successfully"
+                }
+            }
+        },
+        "swagger.resVerifyResetCode": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Code verified successfully"
                 }
             }
         }

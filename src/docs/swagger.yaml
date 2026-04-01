@@ -57,6 +57,14 @@ definitions:
         example: email@mail.ru
         type: string
     type: object
+  auth.ForgotPasswordRequest:
+    properties:
+      email:
+        example: example@gmail.com
+        type: string
+    required:
+    - email
+    type: object
   auth.LoginRequest:
     properties:
       email:
@@ -93,6 +101,20 @@ definitions:
     - email
     - password
     type: object
+  auth.SetNewPasswordRequest:
+    properties:
+      email:
+        example: example@gmail.com
+        type: string
+      new_password:
+        example: New_Password123!
+        maxLength: 24
+        minLength: 8
+        type: string
+    required:
+    - email
+    - new_password
+    type: object
   auth.TokenResponse:
     properties:
       access_token:
@@ -109,6 +131,18 @@ definitions:
         type: string
     type: object
   auth.VerifyCodeRequest:
+    properties:
+      code:
+        example: "000000"
+        type: string
+      email:
+        example: example@gmail.com
+        type: string
+    required:
+    - code
+    - email
+    type: object
+  auth.VerifyResetCodeRequest:
     properties:
       code:
         example: "000000"
@@ -538,6 +572,17 @@ definitions:
         type: string
       user_email:
         type: string
+    required:
+    - email
+    - inn
+    - kpp
+    - name
+    - ogrn
+    - org_name
+    - org_short_name
+    - patronymic
+    - phone
+    - surname
     type: object
   service.ServiceResponse:
     properties:
@@ -576,6 +621,31 @@ definitions:
         example: User added to company successfully
         type: string
     type: object
+  swagger.CreateAdminRequest:
+    properties:
+      email:
+        example: example@gmail.com
+        type: string
+      name:
+        example: Иван
+        type: string
+      surname:
+        example: Иванов
+        type: string
+    required:
+    - email
+    - name
+    - surname
+    type: object
+  swagger.CreateAdminResponse:
+    properties:
+      email:
+        example: example@gmail.com
+        type: string
+      message:
+        example: Admin created successfully
+        type: string
+    type: object
   swagger.LogoutRequest:
     properties:
       refresh_token:
@@ -612,11 +682,73 @@ definitions:
         example: User successfully registered
         type: string
     type: object
+  swagger.resForgotPassword:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      message:
+        example: Reset code sent to email
+        type: string
+    type: object
+  swagger.resSetPassword:
+    properties:
+      message:
+        example: Password reset successfully
+        type: string
+    type: object
+  swagger.resVerifyResetCode:
+    properties:
+      message:
+        example: Code verified successfully
+        type: string
+    type: object
 info:
   contact: {}
   description: API для сервиса  Pioneer.
   title: Pioneer API
 paths:
+  /admin/create-admin:
+    post:
+      consumes:
+      - application/json
+      description: Создает нового администратора. Доступно только для существующих
+        администраторов.
+      parameters:
+      - description: Данные для создания администратора
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/swagger.CreateAdminRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Администратор успешно создан
+          schema:
+            $ref: '#/definitions/swagger.CreateAdminResponse'
+        "400":
+          description: Invalid request body | validation error | email already exists
+          schema:
+            type: string
+        "401":
+          description: Unauthorized | Invalid token
+          schema:
+            type: string
+        "403":
+          description: 'Forbidden: only admins can create new admins'
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Создать нового администратора
+      tags:
+      - admin
   /admin/partner-requests/:
     get:
       consumes:
@@ -647,6 +779,51 @@ paths:
       security:
       - BearerAuth: []
       summary: Получить все заявки партнёров
+      tags:
+      - admin
+  /admin/partner-requests/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает заявку на регистрацию организации по указанному UUID.
+        Доступно только для администраторов.
+      parameters:
+      - description: UUID заявки
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о заявке
+          schema:
+            $ref: '#/definitions/admin.PartnerRequest'
+        "400":
+          description: ID is required | ID must be UUID
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "403":
+          description: 'Forbidden: admin access required'
+          schema:
+            type: string
+        "404":
+          description: request with id ... not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить заявку по ID
       tags:
       - admin
   /admin/partner-requests/approve:
@@ -910,6 +1087,40 @@ paths:
       summary: Взять заявку в работу
       tags:
       - admin
+  /auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Отправляет на указанный email код для восстановления пароля.
+      parameters:
+      - description: Email пользователя
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Код отправлен
+          schema:
+            $ref: '#/definitions/swagger.resForgotPassword'
+        "400":
+          description: Invalid request body | validation error
+          schema:
+            type: string
+        "404":
+          description: User not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Запрос на восстановление пароля
+      tags:
+      - auth
   /auth/login:
     post:
       consumes:
@@ -1055,6 +1266,38 @@ paths:
       summary: Регистрация нового пользователя
       tags:
       - auth
+  /auth/set-password:
+    post:
+      consumes:
+      - application/json
+      description: Устанавливает новый пароль для пользователя после успешного подтверждения
+        кода.
+      parameters:
+      - description: Email и новый пароль
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.SetNewPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Пароль изменён
+          schema:
+            $ref: '#/definitions/swagger.resSetPassword'
+        "400":
+          description: Invalid request body | validation error | Invalid or expired
+            reset session
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Установка нового пароля
+      tags:
+      - auth
   /auth/verify:
     post:
       consumes:
@@ -1089,6 +1332,37 @@ paths:
           schema:
             type: string
       summary: Подтверждение регистрации по коду
+      tags:
+      - auth
+  /auth/verify-reset-code:
+    post:
+      consumes:
+      - application/json
+      description: Проверяет корректность и срок действия кода, отправленного на email.
+      parameters:
+      - description: Email и код подтверждения
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.VerifyResetCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Код подтверждён
+          schema:
+            $ref: '#/definitions/swagger.resVerifyResetCode'
+        "400":
+          description: Invalid request body | validation error | invalid code | code
+            expired
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Подтверждение кода
       tags:
       - auth
   /branch:
