@@ -51,9 +51,6 @@ func (s *PostgresOrderStorage) GetDetailsByBranchServ(branchServID uuid.UUID) ([
 	err := s.DB.QueryRow(`SELECT service_detalis, price FROM branch_services WHERE id = $1`, branchServID).Scan(&detailsJSON, &priceJSON)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil, fmt.Errorf("branch service not found")
-		}
-		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil, ErrBranchServiceNotFound
 		}
 		return nil, nil, fmt.Errorf("query failed: %w", err)

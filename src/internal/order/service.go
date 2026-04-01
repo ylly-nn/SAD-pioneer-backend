@@ -12,13 +12,19 @@ import (
 )
 
 var (
-	ErrEmptyEmail         = errors.New("email cannot be empty")
-	ErrInnLen             = errors.New("inn length must be 12 characters")
-	ErrDetailNameIsEpmpty = errors.New("detail name cannot be empty")
-	ErrDetailNotFound     = errors.New("detail with this name not found")
-	ErrDetailNotAvailable = errors.New("detail  is not available for this service")
-	ErrDateInPast         = errors.New("date cannot be in the past")
-	ErrDateInFuture       = errors.New("date cannot be more than one year in the future")
+	ErrEmptyEmail              = errors.New("email cannot be empty")
+	ErrInnLen                  = errors.New("inn length must be 12 characters")
+	ErrDetailNameIsEpmpty      = errors.New("detail name cannot be empty")
+	ErrDetailNotFound          = errors.New("detail with this name not found")
+	ErrDetailNotAvailable      = errors.New("detail  is not available for this service")
+	ErrDateInPast              = errors.New("date cannot be in the past")
+	ErrDateInFuture            = errors.New("date cannot be more than one year in the future")
+	ErrBranchServIsEmpty       = errors.New("service_by_branch cannot be empty")
+	ErrStartMomentIsEmpty      = errors.New("start moment cannot be empty")
+	ErrOrderDetailsIsEmpty     = errors.New("order_details cannot be empty")
+	ErrTimeInPast              = errors.New("time cannot be in the past")
+	ErrTimeInFuture            = errors.New("time cannot be more than one year in the future")
+	ErrStartMomemtNotAvailable = errors.New("start moment is not available for the requested details")
 )
 
 // содержит бизнес-логику для работы с услугами.
@@ -36,18 +42,25 @@ func (m *OrderManager) Create(email string, req CreateOrderRequest) (*Order, err
 	// Приводим время к UTC для согласованности с БД
 	req.StartMoment = req.StartMoment.UTC()
 
-	// Проверка обязательных полей
-	if email == "" {
-		return nil, errors.New("users is required")
-	}
 	if req.ServiceByBranch == uuid.Nil {
-		return nil, errors.New("service_by_branch is required")
+		return nil, ErrBranchServIsEmpty
 	}
 	if req.StartMoment.IsZero() {
-		return nil, errors.New("start moment is required")
+		return nil, ErrStartMomentIsEmpty
 	}
 	if len(req.OrderDetails) == 0 {
-		return nil, errors.New("order_details is required")
+		return nil, ErrOrderDetailsIsEmpty
+	}
+
+	nowUTC := time.Now().UTC()
+	todayUTC := time.Date(nowUTC.Year(), nowUTC.Month(), nowUTC.Day(), 0, 0, 0, 0, time.UTC)
+	if req.StartMoment.Before(nowUTC) {
+		return nil, ErrTimeInPast
+	}
+
+	maxDateUTC := todayUTC.AddDate(1, 0, 0)
+	if req.StartMoment.After(maxDateUTC) {
+		return nil, ErrTimeInFuture
 	}
 
 	detailsDB, priceDB, err := m.storage.GetDetailsByBranchServ(req.ServiceByBranch)
@@ -145,7 +158,7 @@ func (m *OrderManager) Create(email string, req CreateOrderRequest) (*Order, err
 		}
 	}
 	if !valid {
-		return nil, errors.New("start moment is not available for the requested duration")
+		return nil, ErrStartMomemtNotAvailable
 	}
 
 	endTime := req.StartMoment.Add(time.Duration(totalMinutes) * time.Minute)
