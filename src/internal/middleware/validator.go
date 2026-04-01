@@ -344,7 +344,13 @@ func validateOGRN(fl validator.FieldLevel) bool {
 // validateOrgName проверяет название организации (латиница, кириллица, кавычки, пробелы)
 func validateOrgName(fl validator.FieldLevel) bool {
 	name := fl.Field().String()
-	if len(name) < 3 || len(name) > 100 {
+
+	length := 0
+	for range name {
+		length++
+	}
+
+	if length < 3 || length > 100 {
 		return false
 	}
 
@@ -370,7 +376,13 @@ func validateOrgName(fl validator.FieldLevel) bool {
 // validateOrgShortName проверяет короткое название организации (латиница, кириллица, кавычки, пробелы)
 func validateOrgShortName(fl validator.FieldLevel) bool {
 	name := fl.Field().String()
-	if len(name) < 3 || len(name) > 50 {
+
+	length := 0
+	for range name {
+		length++
+	}
+
+	if length < 3 || length > 50 {
 		return false
 	}
 
@@ -396,7 +408,13 @@ func validateOrgShortName(fl validator.FieldLevel) bool {
 // validatePersonName проверяет имя/фамилию/отчество (только кириллица и тире)
 func validatePersonName(fl validator.FieldLevel) bool {
 	name := fl.Field().String()
-	if len(name) < 2 || len(name) > 100 {
+
+	length := 0
+	for range name {
+		length++
+	}
+
+	if length < 2 || length > 100 {
 		return false
 	}
 
@@ -431,9 +449,12 @@ func validatePhone(fl validator.FieldLevel) bool {
 // validateAddress проверяет адрес (кириллица, цифры, пробел, точка, запятая)
 func validateAddress(fl validator.FieldLevel) bool {
 	address := fl.Field().String()
+	length := 0
+	for range address {
+		length++
+	}
 
-	// Проверка длины
-	if len(address) < 10 || len(address) > 50 {
+	if length < 10 || length > 50 {
 		return false
 	}
 
