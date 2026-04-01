@@ -119,16 +119,14 @@ func (h *Handler) GetServiceDetails(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "branch service not found", http.StatusNotFound)
 			return
 		}
+		if errors.Is(err, ErrDetailsNotFound) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(nil)
+			return
+		}
 
-		log.Printf("GetServiceDetails error: %v", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	if details == nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(nil)
 		return
 	}
 

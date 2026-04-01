@@ -41,37 +41,35 @@ func NewPostgresBranchStorage(sqlDB *sql.DB) *PostgresBranchStorage {
 
 // Получение деталей услуги по branch_serv
 func (s *PostgresBranchStorage) GetServiceDetails(branchServID uuid.UUID) ([]*ServiceDetails, []*ServPrice, error) {
-	var detailsJSON json.RawMessage
-	var priceJSON json.RawMessage
-	err := s.DB.QueryRow(`SELECT service_detalis, price FROM branch_services WHERE id = $1`, branchServID).Scan(&detailsJSON, &priceJSON)
+	var detailsStr sql.NullString
+	var priceStr sql.NullString
+
+	err := s.DB.QueryRow(`SELECT service_detalis, price FROM branch_services WHERE id = $1`, branchServID).Scan(&detailsStr, &priceStr)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil, fmt.Errorf("branch service not found")
-		}
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil, ErrBranchServiceNotFound
 		}
 		return nil, nil, fmt.Errorf("query failed: %w", err)
 	}
 
-	// Если JSON пустой возвращаем пустой срез
-	if len(detailsJSON) == 0 || string(detailsJSON) == "null" {
-		return []*ServiceDetails{}, []*ServPrice{}, nil
+	if !detailsStr.Valid || !priceStr.Valid {
+		return nil, nil, ErrDetailsNotFound
 	}
+
 	var detailsMap map[string]int
-	if len(detailsJSON) == 0 || string(detailsJSON) == "null" {
+	if detailsStr.String == "" || detailsStr.String == "null" {
 		detailsMap = make(map[string]int)
 	} else {
-		if err := json.Unmarshal(detailsJSON, &detailsMap); err != nil {
+		if err := json.Unmarshal([]byte(detailsStr.String), &detailsMap); err != nil {
 			return nil, nil, fmt.Errorf("failed to parse service details: %w", err)
 		}
 	}
 
 	var priceMap map[string]float32
-	if len(priceJSON) == 0 || string(priceJSON) == "null" {
+	if priceStr.String == "" || priceStr.String == "null" {
 		priceMap = make(map[string]float32)
 	} else {
-		if err := json.Unmarshal(priceJSON, &priceMap); err != nil {
+		if err := json.Unmarshal([]byte(priceStr.String), &priceMap); err != nil {
 			return nil, nil, fmt.Errorf("failed to parse service price: %w", err)
 		}
 	}
