@@ -32,6 +32,7 @@ type OrderStorage interface {
 var (
 	ErrBranchServiceNotFound = errors.New("branch service not found")
 	ErrOrdersNotFound        = errors.New("orders not found")
+	ErrBranchNotFound        = errors.New("branch not found")
 )
 
 // реализует OrderStorage для PostgreSQL.
@@ -138,10 +139,11 @@ func (s *PostgresOrderStorage) GetOpenCloseTime(branchID uuid.UUID) (*OpenCloseB
     `, branchID).Scan(&openTimeStr, &closeTimeStr)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("branch with id %s not found", branchID)
+			return nil, ErrBranchNotFound
 		}
 		return nil, fmt.Errorf("failed to query open/close time: %w", err)
 	}
+
 	if !openTimeStr.Valid {
 		return nil, fmt.Errorf("open_time is null for branch %s", branchID)
 	}

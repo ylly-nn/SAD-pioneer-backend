@@ -17,6 +17,8 @@ var (
 	ErrDetailNameIsEpmpty = errors.New("detail name cannot be empty")
 	ErrDetailNotFound     = errors.New("detail with this name not found")
 	ErrDetailNotAvailable = errors.New("detail  is not available for this service")
+	ErrDateInPast         = errors.New("date cannot be in the past")
+	ErrDateInFuture       = errors.New("date cannot be more than one year in the future")
 )
 
 // содержит бизнес-логику для работы с услугами.
@@ -211,6 +213,18 @@ func (m *OrderManager) GetFreeTimeForDay(branchID uuid.UUID, day time.Time, dura
 // GetFreeTimeForWeek возвращает свободные слоты с шагом 15 минут
 // для указанного филиала на неделю, начиная с startDate.
 func (m *OrderManager) GetFreeTimeForWeek(branchID uuid.UUID, startDate time.Time, duration int) ([]DailySlots, error) {
+
+	nowUTC := time.Now().UTC()
+	todayUTC := time.Date(nowUTC.Year(), nowUTC.Month(), nowUTC.Day(), 0, 0, 0, 0, time.UTC)
+	if startDate.Before(todayUTC) {
+		return []DailySlots{}, ErrDateInPast
+	}
+
+	maxDateUTC := todayUTC.AddDate(1, 0, 0)
+	if startDate.After(maxDateUTC) {
+		return []DailySlots{}, ErrDateInFuture
+	}
+
 	openClose, err := m.storage.GetOpenCloseTime(branchID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get open/close time: %w", err)

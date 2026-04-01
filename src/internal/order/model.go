@@ -57,6 +57,12 @@ type DailySlots struct {
 	Intervals []UTCTime `json:"intervals" swagertype:"array" example:"[2026-03-17T10:35:00+00:00, 2026-03-17T10:50:00+00:00, 2026-03-17T11:05:00+00:00]"`
 }
 
+// Используется для первода времени DailySlots в нужный часовой пояс
+type DailySlotsTZ struct {
+	Date      time.Time   `json:"date" example:"2026-03-16T00:00:00Z" format:"yyyy-mm-ddT00:00:00Z"`
+	Intervals []time.Time `json:"intervals" swagertype:"array" example:"[2026-03-17T10:35:00+00:00, 2026-03-17T10:50:00+00:00, 2026-03-17T11:05:00+00:00]"`
+}
+
 // OpenCloseBranch содержит время открытия и закрытия филиала
 type OpenCloseBranch struct {
 	OpenTimeBranch  time.Time

@@ -82,6 +82,7 @@ func (h *Handler) GetFreeTime(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing date", http.StatusBadRequest)
 		return
 	}
+
 	date, err := time.Parse("2006-01-02", dateStr)
 	if err != nil {
 		http.Error(w, "invalid date format, expected YYYY-MM-DD", http.StatusBadRequest)
@@ -100,15 +101,59 @@ func (h *Handler) GetFreeTime(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	tzParam := r.URL.Query().Get("timezone")
+	loc := time.UTC
+	if tzParam != "" {
+		var err error
+		loc, err = timeparsing.ParseLocation(tzParam)
+		if err != nil {
+			http.Error(w, "invalid timezone format. Use IANA name (e.g., Europe/Moscow) or offset (e.g., +03:00)", http.StatusBadRequest)
+			return
+		}
+	}
+
 	slots, err := h.order.GetFreeTimeForWeek(branchID, date, duration)
+
 	if err != nil {
 		log.Printf("GetFreeTime error: %v", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, ErrBranchNotFound):
+			http.Error(w, ErrBranchNotFound.Error(), http.StatusNotFound)
+		case errors.Is(err, ErrDateInPast):
+			http.Error(w, ErrDateInPast.Error(), http.StatusBadRequest)
+		case errors.Is(err, ErrDateInFuture):
+			http.Error(w, ErrDateInFuture.Error(), http.StatusBadRequest)
+		default:
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+		}
 		return
 	}
 
+	if tzParam == "" || tzParam == "0" {
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(slots); err != nil {
+			log.Printf("GetFreeTime encode error: %v", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	response := make([]DailySlotsTZ, len(slots))
+	for i, day := range slots {
+		// Локальная дата (полночь в заданной зоне)
+		dateInLoc := time.Date(day.Date.Year(), day.Date.Month(), day.Date.Day(), 0, 0, 0, 0, loc)
+		intervals := make([]time.Time, len(day.Intervals))
+		for j, slot := range day.Intervals {
+			intervals[j] = time.Time(slot).In(loc)
+		}
+		response[i] = DailySlotsTZ{
+			Date:      dateInLoc,
+			Intervals: intervals,
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(slots); err != nil {
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("GetFreeTime encode error: %v", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 	}
