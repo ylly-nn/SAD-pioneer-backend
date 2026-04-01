@@ -77,16 +77,16 @@ func (h *Handler) GetBranchesByCityAndService(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	if _, err := uuid.Parse(service); err != nil {
+		http.Error(w, "invalid service id", http.StatusBadRequest)
+		return
+	}
+
 	branches, err := h.branch.GetBranchByCityServ(city, service)
 	if err != nil {
 		log.Printf("GetBranchByCityServ error: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
-	}
-
-	// Если результат nil или пустой, можно вернуть пустой массив, а не null
-	if branches == nil {
-		branches = []*BrancByCityServ{}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

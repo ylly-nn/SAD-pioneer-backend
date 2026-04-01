@@ -111,8 +111,8 @@ func (s *PostgresBranchStorage) GetBranchByCityServ(city string, serviceID strin
 		return nil, fmt.Errorf("query failed: %w", err)
 	}
 	defer rows.Close()
-
 	var result []*BrancByCityServ
+
 	for rows.Next() {
 		var bcs BrancByCityServ
 		var address, orgShortName sql.NullString
@@ -139,6 +139,7 @@ func (s *PostgresBranchStorage) GetBranchByCityServ(city string, serviceID strin
 	if err = rows.Err(); err != nil {
 		return nil, fmt.Errorf("rows iteration error: %w", err)
 	}
+
 	return result, nil
 }
 
