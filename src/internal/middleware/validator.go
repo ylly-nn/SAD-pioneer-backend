@@ -14,6 +14,13 @@ var validate = validator.New()
 func init() {
 	validate.RegisterValidation("password", validatePassword)
 	validate.RegisterValidation("email", validateEmail)
+	validate.RegisterValidation("inn", validateINN)
+	validate.RegisterValidation("kpp", validateKPP)
+	validate.RegisterValidation("ogrn", validateOGRN)
+	validate.RegisterValidation("org_name", validateOrgName)
+	validate.RegisterValidation("org_short_name", validateOrgShortName)
+	validate.RegisterValidation("person_name", validatePersonName)
+	validate.RegisterValidation("phone", validatePhone)
 }
 
 func validateEmail(fl validator.FieldLevel) bool {
@@ -59,6 +66,20 @@ func SendValidationError(w http.ResponseWriter, err error) {
 			fields["password"] = getPasswordErrorMessage(e)
 		case "ConfirmPassword":
 			fields["confirm_password"] = "Пароли не совпадают"
+		case "INN":
+			fields["inn"] = "ИНН должен содержать 10 или 12 цифр"
+		case "KPP":
+			fields["kpp"] = "КПП должен содержать 9 цифр"
+		case "OGRN":
+			fields["ogrn"] = "ОГРН должен содержать 13 цифр"
+		case "OrgName":
+			fields["org_name"] = "Название организации должно содержать от 3 до 100 символов (латиница, кириллица, пробел, кавычки)"
+		case "OrgShortName":
+			fields["org_short_name"] = "Короткое название организации должно содержать от 3 до 50 символов (латиница, кириллица, пробел, кавычки)"
+		case "Name", "Surname", "Patronymic":
+			fields[strings.ToLower(field)] = "Поле должно содержать только буквы русского алфавита и тире (от 2 до 100 символов)"
+		case "Phone":
+			fields["phone"] = "Телефон должен содержать 10 цифр"
 		default:
 			fields[field] = "Некорректное значение"
 		}
@@ -273,6 +294,135 @@ func validatePassword(fl validator.FieldLevel) bool {
 		result.IsLatin &&
 		len(password) >= 8 &&
 		len(password) <= 24
+}
+
+// validateINN проверяет ИНН
+func validateINN(fl validator.FieldLevel) bool {
+	inn := fl.Field().String()
+	if len(inn) != 10 && len(inn) != 12 {
+		return false
+	}
+	for _, ch := range inn {
+		if ch < '0' || ch > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// validateKPP проверяет КПП
+func validateKPP(fl validator.FieldLevel) bool {
+	kpp := fl.Field().String()
+	if len(kpp) != 9 {
+		return false
+	}
+	for _, ch := range kpp {
+		if ch < '0' || ch > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// validateOGRN проверяет ОГРН
+func validateOGRN(fl validator.FieldLevel) bool {
+	ogrn := fl.Field().String()
+	if len(ogrn) != 13 {
+		return false
+	}
+	for _, ch := range ogrn {
+		if ch < '0' || ch > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// validateOrgName проверяет название организации (латиница, кириллица, кавычки, пробелы)
+func validateOrgName(fl validator.FieldLevel) bool {
+	name := fl.Field().String()
+	if len(name) < 3 || len(name) > 100 {
+		return false
+	}
+
+	// Разрешены: латиница, кириллица, пробелы, кавычки (")
+	for _, ch := range name {
+		// Латиница
+		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') {
+			continue
+		}
+		// Кириллица
+		if (ch >= 'а' && ch <= 'я') || (ch >= 'А' && ch <= 'Я') || ch == 'ё' || ch == 'Ё' {
+			continue
+		}
+		// Пробел и кавычки
+		if ch == ' ' || ch == '"' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+// validateOrgShortName проверяет короткое название организации (латиница, кириллица, кавычки, пробелы)
+func validateOrgShortName(fl validator.FieldLevel) bool {
+	name := fl.Field().String()
+	if len(name) < 3 || len(name) > 50 {
+		return false
+	}
+
+	// Разрешены: латиница, кириллица, пробелы, кавычки (")
+	for _, ch := range name {
+		// Латиница
+		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') {
+			continue
+		}
+		// Кириллица
+		if (ch >= 'а' && ch <= 'я') || (ch >= 'А' && ch <= 'Я') || ch == 'ё' || ch == 'Ё' {
+			continue
+		}
+		// Пробел и кавычки
+		if ch == ' ' || ch == '"' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+// validatePersonName проверяет имя/фамилию/отчество (только кириллица и тире)
+func validatePersonName(fl validator.FieldLevel) bool {
+	name := fl.Field().String()
+	if len(name) < 2 || len(name) > 100 {
+		return false
+	}
+
+	for _, ch := range name {
+		// Кириллица
+		if (ch >= 'а' && ch <= 'я') || (ch >= 'А' && ch <= 'Я') || ch == 'ё' || ch == 'Ё' {
+			continue
+		}
+		// Тире
+		if ch == '-' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+// validatePhone проверяет телефон
+func validatePhone(fl validator.FieldLevel) bool {
+	phone := fl.Field().String()
+	if len(phone) != 10 {
+		return false
+	}
+	for _, ch := range phone {
+		if ch < '0' || ch > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // joinMessages объединяет сообщения в строку
