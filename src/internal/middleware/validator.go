@@ -109,14 +109,46 @@ func validateEmailDetail(email string) (isValid bool, invalidChars string) {
 		return false, "отсутствует часть перед @"
 	}
 
+	// Имя не может начинаться с точки
+	if strings.HasPrefix(name, ".") {
+		return false, "имя почты не может начинаться с точки"
+	}
+
+	// Имя не может заканчиваться точкой
+	if strings.HasSuffix(name, ".") {
+		return false, "имя почты не может заканчиваться точкой"
+	}
+
+	// Имя не может содержать две точки подряд
+	if strings.Contains(name, "..") {
+		return false, "имя почты не может содержать две точки подряд"
+	}
+
 	// Проверка домена (после @)
 	if len(domain) == 0 {
 		return false, "отсутствует домен после @"
 	}
 
+	// Домен не может начинаться с точки
+	if strings.HasPrefix(domain, ".") {
+		return false, "домен не может начинаться с точки"
+	}
+
 	// Проверка на точку в конце
 	if strings.HasSuffix(domain, ".") {
 		return false, "домен не может заканчиваться точкой"
+	}
+
+	// Домен не может содержать две точки подряд
+	if strings.Contains(domain, "..") {
+		return false, "домен не может содержать две точки подряд"
+	}
+
+	// После последней точки должно быть минимум 2 символа
+	domainParts := strings.Split(domain, ".")
+	lastPart := domainParts[len(domainParts)-1]
+	if len(lastPart) < 2 {
+		return false, "домен после последней точки должен содержать минимум 2 символа (например, .ru, .com)"
 	}
 
 	// Проверка, что домен не начинается с точки
@@ -180,7 +212,7 @@ func getPasswordErrorMessage(e validator.FieldError) string {
 		messages = append(messages, "только латинские буквы")
 	}
 	if result.HasSpace {
-		messages = append(messages, "не должен содержать пробелы")
+		return "Пароль не должен содержать пробелы"
 	}
 
 	if len(messages) == 0 {
@@ -236,6 +268,7 @@ func validatePassword(fl validator.FieldLevel) bool {
 		result.HasLower &&
 		result.HasNumber &&
 		result.HasSpecial &&
+		!result.HasSpace &&
 		result.LetterCount >= 4 &&
 		result.IsLatin &&
 		len(password) >= 8 &&
