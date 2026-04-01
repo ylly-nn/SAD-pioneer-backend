@@ -2,9 +2,14 @@ package branch
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
+)
+
+var (
+	ErrDetailsNotFound = errors.New("details not found")
 )
 
 // BranchManager содержит бизнес-логику для управления связями филиалов и услуг.
@@ -132,6 +137,10 @@ func (m *BranchManager) GetServiceDetails(branchServID uuid.UUID) ([]*ServRespon
 			Duration: d.Duration,
 			Price:    pr,
 		})
+	}
+
+	if result == nil {
+		return nil, ErrDetailsNotFound
 	}
 
 	return result, nil

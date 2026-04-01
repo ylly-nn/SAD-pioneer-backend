@@ -48,10 +48,30 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	order, err := h.order.Create(email, req)
-	if err != nil {
-		log.Printf("CreateOrder error: %v", err)
 
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err != nil {
+		log.Printf("CreateOrdererror: %v", err)
+		switch {
+		case errors.Is(err, ErrBranchServIsEmpty):
+			http.Error(w, ErrBranchServIsEmpty.Error(), http.StatusBadRequest)
+		case errors.Is(err, ErrStartMomentIsEmpty):
+			http.Error(w, ErrStartMomentIsEmpty.Error(), http.StatusBadRequest)
+		case errors.Is(err, ErrOrderDetailsIsEmpty):
+			http.Error(w, ErrOrderDetailsIsEmpty.Error(), http.StatusBadRequest)
+		case errors.Is(err, ErrTimeInPast):
+			http.Error(w, ErrTimeInPast.Error(), http.StatusBadRequest)
+		case errors.Is(err, ErrTimeInFuture):
+			http.Error(w, ErrTimeInFuture.Error(), http.StatusBadRequest)
+		case errors.Is(err, ErrStartMomemtNotAvailable):
+			http.Error(w, ErrStartMomemtNotAvailable.Error(), http.StatusBadRequest)
+		case errors.Is(err, ErrBranchServiceNotFound):
+			http.Error(w, ErrBranchServiceNotFound.Error(), http.StatusBadRequest)
+		case errors.Is(err, ErrDetailNotAvailable):
+			http.Error(w, ErrDetailNotAvailable.Error(), http.StatusBadRequest)
+		default:
+
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+		}
 		return
 	}
 
