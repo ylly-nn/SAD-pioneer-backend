@@ -52,6 +52,12 @@ func (m *OrderManager) Create(email string, req CreateOrderRequest) (*Order, err
 		return nil, ErrOrderDetailsIsEmpty
 	}
 
+	for _, d := range req.OrderDetails {
+		if d.Detail == "" {
+			return nil, ErrOrderDetailsIsEmpty
+		}
+	}
+
 	nowUTC := time.Now().UTC()
 	todayUTC := time.Date(nowUTC.Year(), nowUTC.Month(), nowUTC.Day(), 0, 0, 0, 0, time.UTC)
 	if req.StartMoment.Before(nowUTC) {
