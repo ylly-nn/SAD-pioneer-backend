@@ -28,6 +28,7 @@ type PartnerRequestStorage interface {
 	GetByUserEmail(email string) (*PartnerRequest, error)
 	GetPartUserByEmail(email string) (PartnersUsers, error)
 	Delete(inn string) error
+	HasActiveRequestByINN(inn string) (bool, error)
 }
 
 // PartnersUsersStorage интерфейс для работы с таблицей partners_users
@@ -166,7 +167,7 @@ func (s *PostgresPartnerRequestStorage) GetByUserEmail(email string) (*PartnerRe
 func (s *PostgresPartnerRequestStorage) GetPartUserByEmail(user_email string) (PartnersUsers, error) {
 	var partnerUser PartnersUsers
 
-	query := `SELECT inn, user_email FROM part_req WHERE user_email = $1`
+	query := `SELECT inn, user_email FROM part_req WHERE user_email = $1 AND status != 'rejected'`
 
 	err := s.db.QueryRow(query, user_email).Scan(&partnerUser.Email, &partnerUser.Inn)
 
@@ -181,4 +182,16 @@ func (s *PostgresPartnerRequestStorage) GetPartUserByEmail(user_email string) (P
 
 	return partnerUser, nil
 
+}
+
+// HasActiveRequestByINN проверяет, есть ли активная заявка с таким ИНН
+func (s *PostgresPartnerRequestStorage) HasActiveRequestByINN(inn string) (bool, error) {
+	var exists bool
+	query := `SELECT EXISTS(SELECT 1 FROM part_req WHERE inn = $1 AND status != 'rejected')`
+
+	err := s.db.QueryRow(query, inn).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }
