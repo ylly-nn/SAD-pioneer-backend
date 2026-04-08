@@ -118,7 +118,7 @@ func (s *AdminManager) TakeRequestToWork(id uuid.UUID) error {
 	return nil
 }
 
-// Одобрение заявки (только для админов)
+// Одобрение заявки (pending -> approved)
 func (s *AdminManager) ApprovePartnerRequest(id uuid.UUID) error {
 	// Получение заявки по ID
 	req, err := s.partnerRequestStorage.GetByID(id)
@@ -158,7 +158,7 @@ func (s *AdminManager) ApprovePartnerRequest(id uuid.UUID) error {
 	return nil
 }
 
-// Отклонение заявки
+// Отклонение заявки (pending -> rejected)
 func (s *AdminManager) RejectPartnerRequest(id uuid.UUID) error {
 	// Получение заявки по ID
 	req, err := s.partnerRequestStorage.GetByID(id)
@@ -213,7 +213,7 @@ func (s *AdminManager) GetRequest(id uuid.UUID) (*PartnerRequest, error) {
 
 // CreateAdmin создаёт нового администратора
 func (s *AdminManager) CreateAdmin(email, name, surname string) error {
-	// Проверка, что email не пустой
+	// Проверка, что поля не пустые
 	if email == "" {
 		return fmt.Errorf("email is required")
 	}

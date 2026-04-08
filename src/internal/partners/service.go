@@ -55,9 +55,6 @@ func (s *PartnersManager) CreatePartnerRequest(userEmail string, req *PartnerReq
 	if err != nil {
 		return fmt.Errorf("failed to check if user is partner: %w", err)
 	}
-	if isPartner.IsPartner {
-		return fmt.Errorf("user is already a partner in a company or has an active request")
-	}
 
 	// Проверка на наличие заявки с таким же ИНН
 	existing, _ := s.companyStorage.GetByINN(req.INN)
@@ -72,6 +69,13 @@ func (s *PartnersManager) CreatePartnerRequest(userEmail string, req *PartnerReq
 	if existingRequest != nil {
 		if existingRequest.Status != "rejected" {
 			return fmt.Errorf("an active request with this INN already exists (status: %s)", existingRequest.Status)
+		}
+	}
+	if isPartner.IsPartner {
+		if existingRequest != nil {
+			if existingRequest.Status != "rejected" {
+				return fmt.Errorf("user is already a partner in a company or has an active request")
+			}
 		}
 	}
 
