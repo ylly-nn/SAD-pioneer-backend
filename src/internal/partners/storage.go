@@ -145,7 +145,7 @@ func (s *PostgresPartnerRequestStorage) GetByUserEmail(email string) (*PartnerRe
 	var req PartnerRequest
 	query := `SELECT status, user_email, inn, kpp, ogrn, org_name, org_short_name,
                      name, surname, patronymic, email, phone_number, info, created_at, last_used  
-              FROM part_req WHERE user_email = $1`
+              FROM part_req WHERE user_email = $1 ORDER BY created_at DESC LIMIT 1`
 
 	err := s.db.QueryRow(query, email).Scan(
 		&req.Status, &req.UserEmail, &req.INN, &req.KPP, &req.OGRN,
