@@ -143,53 +143,42 @@ body:
 }
 ~~~
 ---
-
-
-
-
-
-
-
-
-
-# Ветка пользователtq тс
+# Ветка пользователя тс
 ### Get /client/orders
-Header: Bearer <acsess_token>
-Получение заказов для опредеоленного владельца тс 
-Пример успешного ответа: nill или
+Header: Bearer <acсess_token>
+Получение заказов авторизованного клиента
+
+Query параметры:
+- timezone (опционально) — часовой пояс, например Europe/Moscow
+
+Успешный ответ (200): массив заказов или null
 ~~~
 [
     {
-        "order_id": "83817fd0-ffd0-478b-b1ae-b082e8581830",
+        "order_id": "f5affaa5-cf2c-4e4d-a261-cb93ccb72855",
         "name_company": "ООО \"Ромашка\"",
         "city": "Москва",
-        "address": "ул. Тверская, д. 1",
-        "service": "Шиномонтаж",
-        "start_moment": "2026-03-16T09:30:00+04:00",
-        "end_moment": "2026-03-16T11:05:00+04:00",
-        "order_details": {
-            "Шлифовка": 20,
-            "Полировка": 75
-        }
-    },
-    {
-        "order_id": "b433a890-5280-4fb1-ad35-e0c94d5909d3",
-        "name_company": "ООО \"Ромашка\"",
-        "city": "Москва",
-        "address": "ул. Тверская, д. 1",
-        "service": "Шиномонтаж",
-        "start_moment": "2026-03-17T09:00:00+04:00",
-        "end_moment": "2026-03-17T10:35:00+04:00",
-        "order_details": {
-            "Шлифовка": 20,
-            "Полировка": 75
-        }
+        "address": "г. Москва, ул. Тверская, д. 1",
+        "service": "автомойка",
+        "start_moment": "2026-04-01T06:00:00+00:00",
+        "end_moment": "2026-04-01T06:30:00+00:00",
+        "status": "create",
+        "order_details": [
+            {
+                "detail": "мойка двигателя",
+                "duration_min": 30,
+                "price": 30
+            }
+        ],
+        "sum": 30
     }
 ]
+
 ~~~
+---
 ### GET /services - защищённый
 Header: Authorization: Bearer <токен>
-Список всех улуг (общий: шмномотаж, мойка и тд)
+Список всех услуг (общий: шмномотаж, мойка и тд)
 
 Пример успешного ответа:
 ~~~
@@ -204,7 +193,7 @@ Header: Authorization: Bearer <токен>
     }
 ]
 ~~~
-Ответ ```[]``` - тоже успешный
+
 
 ---
 ### GET /client/city - защищённый
@@ -225,7 +214,7 @@ Header: Authorization: Bearer <токен>
 body:
 ~~~
 {
-    "city": "<city>"
+    "city": "Санкт-Петербург"
 }
 ~~~
 Успешный ответ - ```200 OK```
@@ -236,18 +225,16 @@ body:
 Получение списка филиалов по городу и id услуги
 Header: Authorization: Bearer <токен>
 
+Query параметры:
+- city (обязательный) — город
+- service (обязательный) — ID услуги
 
-Пример успешного ответа:
+Успешный ответ (200):
+
 ~~~
 [
     {
         "id_branchserv": "0bb7a20d-4ffc-46cd-b5e5-a549a179ce2a",
-        "id_branch": "89d74b8a-8cee-44fa-96ea-6aec1e8ad66b",
-        "address": "ул. Тверская, д. 1",
-        "org_short_name": "ООО \"Ромашка\""
-    },
-    {
-        "id_branchserv": "e43c3985-9d5c-4658-a4cb-4542d2a38ee3",
         "id_branch": "89d74b8a-8cee-44fa-96ea-6aec1e8ad66b",
         "address": "ул. Тверская, д. 1",
         "org_short_name": "ООО \"Ромашка\""
@@ -269,26 +256,27 @@ Header: Authorization: Bearer <токен>
 ~~~
 [
     {
-        "detail": "price",
-        "duration_min": 2500
-    },
-    {
-        "detail": "duration_min",
-        "duration_min": 60
+        "detail": "Мойка салона",
+        "duration_min": 40,
+        "price": 560.12
     }
 ]
 ~~~
 
 
 ---
-### Get /branch/freetime?branch_id=<branch_id>&date=<yyyy-mm-dd>&duration=<min> - защищённый
+### Get /branch/freetime
 Header: Authorization: Bearer <токен>
-
 
 Получени свободных слотов - время
 
-Пример:
-```/branch/freetime?branch_id=89d74b8a-8cee-44fa-96ea-6aec1e8ad66b&date=2026-03-16&duration=300```
+Query параметры:
+- branch_id (обязательный) — UUID филиала
+- date (обязательный) — дата начала недели yyyy-mm-dd
+- duration (обязательный) — длительность услуги в минутах
+- timezone (опционально) — часовой пояс
+
+Успешный ответ (200):
 Ответ:
 ~~~
 [
@@ -354,9 +342,9 @@ Header: Authorization: Bearer <токен>
 ### Post /order - защищённый
 Header: Authorization: Bearer <токен>
 
-Получение списка всех заказов
+Создание заказа
 
-если дата-время не будет попадать в свободные слоты - которе получаются через GET branch/freetime?branch_id=89d74b8a-8cee-44fa-96ea-6aec1e8ad66b&date=2026-03-16&duration=180 - будет выдавать ошибку 
+если дата-время не будет попадать в свободные слоты - которые получаются через GET branch/freetime?branch_id=89d74b8a-8cee-44fa-96ea-6aec1e8ad66b&date=2026-03-16&duration=180 - будет выдавать ошибку 
 ```start moment is not available for the requested duration```
 
 body:
@@ -364,68 +352,39 @@ body:
 {
     "service_by_branch": "e456338f-5b1c-49af-84d0-18f248d11b1d",
     "start_moment": "2026-03-16T11:20:00+04:00",
-    "order_details": {
-        "Полировка": 30,
-        "Мойка днища":70
-    }
+    "order_details": [
+        {"detail": "Полировка"},
+        {"detail": "Мойка днища"}
+    ]
 }
 ~~~
 Формат order_details - обязательный (услуга-минуты)
 
-Пример успешного ответа: 
+Пример успешного ответа(201): 
 ~~~
 {
     "id": "244a6a7a-bc6c-4825-ad01-b483d308d77d",
-    "users": "ylly_nn@mail.ru",
+    "users": "client@mail.ru",
     "service_by_branch": "e456338f-5b1c-49af-84d0-18f248d11b1d",
     "start_moment": "2026-03-20T05:00:00Z",
     "end_moment": "2026-03-20T05:30:00Z",
-    "order_details": {
-        "Полировка": 30,
-        "Мойка днища":70
-    }
+    "order_details": [
+        {"detail": "Полировка"},
+        {"detail": "Мойка днища"}
+    ]
 }
 ~~~
 ---
 
-
-
-
-
-## /services
-
-### POST /services
-Создание новой услуги
-
-body:
-~~~
-{
-    "name": "<название_услуги>"
-}
-~~~
-Пример успешного ответа
-~~~
-{
-    "id": "cdaef1fc-0b99-437e-aba4-3dfb356cfd5c",
-    "name": "<название_услуги>"
-}
-~~~
 ---
-
-### DELETE /services/{id}
-Удаление услуги по id
-
-При успешном удалении статус: ```204 No Content```
-
----
----
+# Ветка для компаний
 ## /company
 ---
-### GET /company/{inn}
-Плучение информации о компании по инн
-~~~
-GET /company/234567890123
-~~~
+### GET /company
+Получение данных компании текущего авторизованного партнёра
+
+Успешный ответ (200):
+
 Пример успешного ответа: 
 ~~~
 {
@@ -438,211 +397,217 @@ GET /company/234567890123
 ~~~
 
 ---
-### GET /company
-Получение списка компаний
 
-Пример успешного ответа:
+### GET /company/branches
+Список филиалов компании
+
+Успешный ответ (200): массив филиалов или null
 ~~~
 [
     {
-        "inn": "234567890123",
-        "kpp": "234567891",
-        "ogrn": "2345678901234",
-        "org_name": "АО \"Технопром\"",
-        "org_short_name": "Технопром"
-    },
-    {
-        "inn": "345678901234",
-        "kpp": "345678912",
-        "ogrn": "3456789012345",
-        "org_name": "ООО \"Альянс\"",
-        "org_short_name": "Альянс"
-    },
-]
-~~~
----
-### Get /company/order/{inn}
-Получение заказов для определённой компании
-
-Пример успешного ответа: null или 
-
-~~~
-[
-    {
-        "id": "83817fd0-ffd0-478b-b1ae-b082e8581830",
-        "users": "ivanov",
-        "service_by_branch": "e456338f-5b1c-49af-84d0-18f248d11b1d",
-        "inn": "770123456789",
-        "name_company": "ООО \"Ромашка\"",
+        "branch_id": "9eebb3b9-5b35-4007-9d4f-2f4141786b45",
         "city": "Москва",
-        "address": "ул. Тверская, д. 1",
-        "service": "Шиномонтаж",
-        "start_moment": "2026-03-16T09:30:00+04:00",
-        "end_moment": "2026-03-16T11:05:00+04:00",
-        "order_details": {
-            "Шлифовка": 20,
-            "Полировка": 75
-        }
-    },
-    {
-        "id": "b433a890-5280-4fb1-ad35-e0c94d5909d3",
-        "users": "ivanov",
-        "service_by_branch": "e456338f-5b1c-49af-84d0-18f248d11b1d",
-        "inn": "770123456789",
-        "name_company": "ООО \"Ромашка\"",
-        "city": "Москва",
-        "address": "ул. Тверская, д. 1",
-        "service": "Шиномонтаж",
-        "start_moment": "2026-03-17T09:00:00+04:00",
-        "end_moment": "2026-03-17T10:35:00+04:00",
-        "order_details": {
-            "Шлифовка": 20,
-            "Полировка": 75
-        }
+        "address": "ул. Тверская, 1",
+        "open_time": "10:00:00+00:00",
+        "close_time": "18:00:00+00:00",
+        "inn_company": "123456789012"
     }
 ]
 ~~~
 ---
-### POST /company
-Создание новой компании
 
-body:
+### GET /company/branches/{branch_id}
+Детальная информация о филиале с услугами
+
+Успешный ответ (200):
 ~~~
 {
-    "inn": "123456789011",
-    "kpp": "123456789",
-    "ogrn": "1234567890123",
-    "org_name": "Общество с ограниченной ответственностью \"Ромашка\"",
-    "org_short_name": "ООО \"Ромашка\""
-  }
-~~~
-Пример успешного ответа:
-~~~
-{
-    "inn": "123456789011",
-    "kpp": "123456789",
-    "ogrn": "1234567890123",
-    "org_name": "Общество с ограниченной ответственностью \"Ромашка\"",
-    "org_short_name": "ООО \"Ромашка\""
-}
-~~~
----
-### DELETE /company/{inn}
-Удаление компании по инн
-~~~
-DELETE /company/123456789011
-~~~
-Успешный ответ - ```204 No Content```
-
----
-### Post /company/branch/service
-Добавление сервиса - для филиала
-
-body:
-~~~
-{
-    "branch": "7b0fd8a2-0a9e-4004-b973-e36df7cd34e2",
-    "service": "38ce95aa-e669-4166-a723-9779f869d894",
-    "service_detalis": {
-        "Мойка днища": 20,
-        "Чистка салона": 30,
-        "Полировка": 75
-    }
-}
-~~~
-Для service_detalis - формат обязательный(услуга-минуты)
-
-Пример успешного ответа:
-~~~
-{
-    "id": "9da1a2f4-7236-443a-aa4c-0d627dbed89e",
-    "branch": "7b0fd8a2-0a9e-4004-b973-e36df7cd34e2",
-    "service": "38ce95aa-e669-4166-a723-9779f869d894",
-    "service_detalis": {
-        "Мойка днища": 20,
-        "Чистка салона": 30,
-        "Полировка": 75
-    }
+    "city": "Санкт-Петербург",
+    "address": "Невский пр., 10",
+    "open_time": "10:00:00+00:00",
+    "close_time": "18:00:00+00:00",
+    "services": [
+        {
+            "branch_serv_id": "6fdd2352-ffc4-4140-b54c-67657f841c1c",
+            "service_id": "03db1f58-2bbd-481c-8d93-b2828871b376",
+            "service_name": "мойка"
+        }
+    ]
 }
 ~~~
 ---
 
-## /client
+### POST /company/branch
+Добавить новый филиал компании
 
-### POST /client
-Создание нового владельца тс - чтобы он создался он должен быть зарегеистрирован (то есть находится в all_users)
+Body:
 
-body
 ~~~
 {
-    "email": "<email>"
+    "city": "Москва",
+    "address": "Улица тверская дом 1",
+    "open_time": "09:00:00+03:00",
+    "close_time": "17:00:00+03:00"
 }
 ~~~
-Пример успешного ответа
+Успешный ответ (201):
 ~~~
 {
-    "id": "<id>",
-    "email": "<email>"
+    "message": "Branch added to company successfully",
+    "city": "Москва",
+    "address": "Улица тверская дом 1",
+    "open_time": "10:00:00+00:00",
+    "close_time": "18:00:00+00:00"
 }
 ~~~
 ---
+### POST /company/branch/service
+Добавить существующую услугу в филиал
 
+Body:
 
+~~~
+{
+    "branch_id": "9eebb3b9-5b35-4007-9d4f-2f4141786b45",
+    "service_id": "03db1f58-2bbd-481c-8d93-b2828871b376"
+}
+~~~
+Успешный ответ (201):
 
+~~~
+{
+    "message": "Service added to branch successfully",
+    "branch_id": "9eebb3b9-5b35-4007-9d4f-2f4141786b45",
+    "service_id": "03db1f58-2bbd-481c-8d93-b2828871b376"
+}
+~~~
+---
+### DELETE /company/branch/service/detail/{branchServID}
+Удалить деталь услуги филиала
 
+Параметры:
+- branchServID (path) — UUID записи услуги филиала
+- detail (query) — название детали
+
+Успешный ответ (200): обновлённый список деталей
 ---
 
----
----
 
-## /order
-### GET /order
+### POST /company/branch/service/detail
+Добавить деталь (конкретную работу) к услуге филиала
 
-Получение списка всех заказов 
-Успешный ответ null или 
+Body:
+~~~
+{
+    "branchserv_id": "6fdd2352-ffc4-4140-b54c-67657f841c1c",
+    "detail": "Мойка салона",
+    "duration": 40,
+    "price": 700.5
+}
+~~~
+Успешный ответ (201):
+
 ~~~
 [
     {
-        "id": "94e416f7-889d-422e-99f1-113ba4c1841b",
-        "idusers": "b0debf62-b3d6-4d27-ab66-f20213394be5",
-        "users": "email@mail.ru",
-        "service_by_branch": "f7148035-fd33-47e2-b380-1eacb4a66128",
-        "inn": "345678901234",
-        "name_company": "Альянс",
-        "city": "Нижний Новгород",
-        "address": "ул. Большая Покровская, 5",
-        "service": "мойка",
-        "start_moment": "2026-03-16T09:30:00+04:00",
-        "end_moment": "2026-03-16T11:05:00+04:00",
-        "order_details": {
-            "Шлифовка": 20,
-            "Полировка": 75
-        }
-    },
-    {
-        "id": "340e9cd7-c4d5-4063-8444-452ac7c85a59",
-        "idusers": "b0debf62-b3d6-4d27-ab66-f20213394be5",
-        "users": "email@mail.ru",
-        "service_by_branch": "f7148035-fd33-47e2-b380-1eacb4a66128",
-        "inn": "345678901234",
-        "name_company": "Альянс",
-        "city": "Нижний Новгород",
-        "address": "ул. Большая Покровская, 5",
-        "service": "мойка",
-         "start_moment": "2026-03-17T09:00:00+04:00",
-        "end_moment": "2026-03-17T10:35:00+04:00",
-        "order_details": {
-            "Шлифовка": 20,
-            "Полировка": 75
-        }
+        "detail": "Мойка салона",
+        "duration_min": 40,
+        "price": 700.5
     }
 ]
 ~~~
 ---
 
+### GET /company/branch/service/{branchServID}
+Получить детали услуги филиала
 
+Успешный ответ (200):
+~~~
+{
+    "detail": "Мойка салона",
+    "duration_min": 40,
+    "price": 700.5
+}
+~~~
+---
+### POST /company/users
+Добавить существующего пользователя в компанию как партнёра
 
-# Ветка для администраторов + заявок для организаций
+Body:
+~~~
+{
+    "email": "newuser@example.com"
+}
+~~~
+Успешный ответ (201):
+~~~
+{
+    "message": "User added to company successfully",
+    "email": "newuser@example.com"
+}
+~~~
+---
+### GET /company/orders
+Получить заказы компании (сгруппированные по филиалам)
+
+Успешный ответ (200):
+
+~~~
+[
+    {
+        "branch_id": "...",
+        "city": "Москва",
+        "address": "ул. Тверская, 1",
+        "orders": [
+            {
+                "id": "05544774-f958-42a9-8f9b-7b56f5a43b52",
+                "users": "aigizshai@gmail.com",
+                "service_by_branch": "aa082c35-bc51-40b4-a2c1-e84b25e69b95",
+                "name_service": "автомойка",
+                "start_moment": "2026-04-04T11:15:00Z",
+                "end_moment": "2026-04-04T11:55:00Z",
+                "status": "approve",
+                "order_details": [
+                    {
+                        "detail": "Мойка кузова",
+                        "duration_min": 40,
+                        "price": 700.5
+                    }
+                ],
+                "sum": 700.5
+            }
+        ]
+    }
+]
+---
+~~~
+### PUT /company/order/status
+Подтвердить или отклонить заказ (доступно только для партнёров)
+
+Header: Authorization: Bearer <токен>
+
+Query параметры:
+- orderID (обязательный) — UUID заказа
+- status (обязательный) — approve или reject
+
+Успешный ответ (200): обновлённый объект заказа
+~~~
+{
+    "id": "05544774-f958-42a9-8f9b-7b56f5a43b52",
+    "users": "client@example.com",
+    "service_by_branch": "aa082c35-bc51-40b4-a2c1-e84b25e69b95",
+    "name_service": "автомойка",
+    "start_moment": "2026-04-04T11:15:00Z",
+    "end_moment": "2026-04-04T11:55:00Z",
+    "status": "approve",
+    "order_details": [...],
+    "sum": 700.5
+}
+~~~
+---
+
+---
+# Заявки для организаций
 ## /partner
 ---
 ### POST /partner/request
@@ -704,6 +669,7 @@ GET /partner/request
 ~~~
 ---
 
+# Ветка для администраторов
 ## /admin
 ---
 ### GET /admin/partner-requests/
@@ -711,10 +677,6 @@ GET /partner/request
 
 Header: Authorization: Bearer <токен>
 
-body:
-~~~
-{
-}
 ~~~
 Пример успешного ответа
 ~~~
