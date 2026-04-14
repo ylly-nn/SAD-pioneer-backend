@@ -1,0 +1,119 @@
+package main
+
+import (
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+
+	_ "src/docs"
+	"src/internal/admin"
+	"src/internal/auth"
+	"src/internal/branch"
+	"src/internal/client"
+	"src/internal/company"
+	configPkg "src/internal/config"
+	"src/internal/db"
+	"src/internal/middleware"
+	"src/internal/order"
+	"src/internal/partners"
+	"src/internal/router"
+	"src/internal/service"
+)
+
+func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, relying on system environment")
+	}
+
+	// Загрузка порта из env
+	port := os.Getenv("SERVER_PORT")
+
+	// Загрузка конфигурации для jwt токенов
+	jwt, err := configPkg.LoadJWTConfig()
+	if err != nil {
+		log.Fatal("Failed to load config:", err)
+	}
+
+	//Подключение к бд
+	database, err := db.Connect()
+	if err != nil {
+		log.Fatal("Could not connect to database: %w", err)
+
+	}
+	defer database.Close()
+
+	// Подключение к сервису с email
+	emailService, err := configPkg.ConnectSMTP()
+	if err != nil {
+		log.Fatal("Failed to connect to SMTP:", err)
+	}
+
+	// Конфигурация токенов
+	authConfig := auth.Config{
+		JWTSecretKey:    jwt.SecretKey,
+		AccessTokenTTL:  jwt.AccessTokenTTL,
+		RefreshTokenTTL: jwt.RefreshTokenTTL,
+		VerificationTTL: jwt.VerificationTTL,
+	}
+
+	// Запуск обработчиков из пакета auth
+	userStorage := auth.NewPostgresUserStorage(database)
+	tsUserStorage := auth.NewPostgresTSUserStorage(database)
+	refreshTokenStorage := auth.NewPostgresRefreshTokenStorage(database)
+	verificationStorage := auth.NewMemoryVerificationStorage()
+	resetPasswordStorage := auth.NewMemoryResetPasswordStorage()
+
+	authService := auth.NewAuthManager(userStorage, refreshTokenStorage, verificationStorage, resetPasswordStorage, tsUserStorage, emailService, authConfig)
+	authHandler := auth.NewHandler(authService)
+
+	//Запуск обработчиков из пакета servise
+	serviceStorage := service.NewPostgresServiceStorage(database)
+	serviceManager := service.NewServiceManager(serviceStorage)
+	serviceHandler := service.NewHandler(serviceManager)
+
+	//Запуск обработчиков из пакета company
+	companyStorage := company.NewPostgresCompanyStorage(database)
+	companyManager := company.NewCompanyManager(companyStorage, userStorage)
+	companyHandler := company.NewHandler(companyManager)
+
+	clientStorage := client.NewPostgresClientStorage(database)
+	clientManager := client.NewClientManager(clientStorage)
+	clientHandler := client.NewHandler(clientManager)
+
+	orderStorage := order.NewPostrgesOrderStorage(database)
+	orderManager := order.NewOrderManager(orderStorage)
+	orderHandler := order.NewHandler(orderManager)
+
+	branchStorage := branch.NewPostgresBranchStorage(database)
+	branchManager := branch.NewBranchManager(branchStorage)
+	branchHandler := branch.NewHandler(branchManager)
+
+	// Запуск обработчиков из пакета admin
+	adminStorage := admin.NewPostgresAdminStorage(database)
+	partnerRequestStorage := admin.NewPostgresPartnerRequestStorage(database)
+	companyStorageFromAdmin := admin.NewPostgresCompanyStorage(database)
+	partnersUsersStorage := admin.NewPostgresPartnersUsersStorage(database)
+
+	adminManager := admin.NewAdminManager(userStorage, partnerRequestStorage, companyStorageFromAdmin, partnersUsersStorage, adminStorage, emailService, admin.Config(authConfig))
+	adminHandler := admin.NewHandler(adminManager)
+
+	// Запуск обработчиков из пакета /partners
+	partnerRequestStorageFromPartners := partners.NewPostgresPartnerRequestStorage(database)
+	companyStorageFromPartners := partners.NewPostgresCompanyStorage(database)
+
+	partnersManager := partners.NewPartnersManager(userStorage, partnerRequestStorageFromPartners, companyStorageFromPartners, emailService, partners.Config(authConfig))
+	partnersHandler := partners.NewHandler(partnersManager)
+
+	authMiddleware := middleware.NewAuthMiddleware(jwt.SecretKey)
+	adminMiddleware := middleware.NewAdminMiddleware(adminManager)
+	//Пути - src/internal/router/router.go
+	router := router.New(authMiddleware, adminMiddleware, serviceHandler, companyHandler, clientHandler, orderHandler, branchHandler, authHandler, adminHandler, partnersHandler)
+
+	// Запуск сервера
+	log.Printf("Сервер запущен на http://localhost:%s", port)
+	log.Fatal(http.ListenAndServe(":"+port, router))
+
+}
